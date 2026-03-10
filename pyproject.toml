@@ -1,0 +1,24 @@
+[project]
+name = "genealogy-tree"
+version = "0.1.0"
+description = "Builds a math genealogy tree for a given user"
+authors = [
+    {name = "Jason Hemann", email = "jason.hemann@gmail.com"},
+]
+dependencies = ["beautifulsoup4>=4.12.3", "requests>=2.32.3"]
+requires-python = ">=3.13"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
+
+[dependency-groups]
+dev = [
+    "lmql>=0.7.3",
+]
