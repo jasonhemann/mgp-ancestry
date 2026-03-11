@@ -16,6 +16,7 @@ from .models import (
 
 MGP_TITLE_SUFFIX = " - The Mathematics Genealogy Project"
 MGP_ID_REGEX = re.compile(r"id\.php\?id=(\d+)")
+ADVISOR_LINE_REGEX = re.compile(r"^\s*advisors?(?:\s+\d+)?\s*:", re.I)
 
 
 def extract_name(soup: BeautifulSoup) -> str:
@@ -161,19 +162,22 @@ def _parse_degree_siblings(degree_div: Tag) -> tuple[str, list[AdvisorRef]]:
             if value and value.lower() != "(none)":
                 dissertation = value
 
-        if "advisor" in lower_text:
-            advisor_links = sibling_tag.find_all("a", href=True)
-            if advisor_links:
-                for link in advisor_links:
-                    href_raw = str(link.attrs.get("href", "")).strip()
-                    name = link.get_text(" ", strip=True)
-                    id_match = MGP_ID_REGEX.search(href_raw)
-                    advisor_id = id_match.group(1) if id_match else None
-                    advisors.append(AdvisorRef(name=name or "Unknown", id=advisor_id, href_raw=href_raw))
+        if ADVISOR_LINE_REGEX.match(text):
+            matched_links: list[AdvisorRef] = []
+            for link in sibling_tag.find_all("a", href=True):
+                href_raw = str(link.attrs.get("href", "")).strip()
+                id_match = MGP_ID_REGEX.search(href_raw)
+                if not id_match:
+                    continue
+                name = link.get_text(" ", strip=True)
+                matched_links.append(AdvisorRef(name=name or "Unknown", id=id_match.group(1), href_raw=href_raw))
+
+            if matched_links:
+                advisors.extend(matched_links)
             elif "unknown" in lower_text:
                 advisors.append(AdvisorRef(name="Unknown", id=None, href_raw=""))
             else:
-                fallback = text.strip() or "Unknown"
+                fallback = ADVISOR_LINE_REGEX.sub("", text, count=1).strip() or "Unknown"
                 advisors.append(AdvisorRef(name=fallback, id=None, href_raw=""))
 
     return dissertation, advisors

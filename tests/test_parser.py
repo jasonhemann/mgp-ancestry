@@ -31,7 +31,7 @@ def test_parse_country_institution_mismatch_warning():
           <img alt="CountryZ" />
         </div>
         <div style="text-align: center"><span id="thesisTitle">Thesis</span></div>
-        <p style="text-align: center">Advisor text without links</p>
+        <p style="text-align: center">Advisor: text without links</p>
       </body>
     </html>
     """
@@ -39,6 +39,35 @@ def test_parse_country_institution_mismatch_warning():
     payload = person.to_dict()
     assert payload["degrees"][0]["advisors"][0]["id"] is None
     assert any("Country/institution count mismatch" in warning for warning in payload["parse_warnings"])
+
+
+def test_parse_advisor_line_ignores_footer_advisor_id_links():
+    html = """
+    <html>
+      <body>
+        <h2 style="text-align: center;">Footer Noise Person</h2>
+        <div style="line-height: 30px; text-align: center; margin-bottom: 1ex">
+          <span>Ph.D. <span style="color:#006633">Alpha University</span> 2000</span>
+          <img alt="CountryX" />
+        </div>
+        <div style="text-align: center"><span id="thesisTitle">Thesis</span></div>
+        <p style="text-align: center; line-height: 2.75ex">
+          Advisor: <a href="id.php?id=12345">Real Advisor</a><br />
+        </p>
+        <p style="font-size: small; text-align: center">
+          If you have additional information, use the
+          <a href="submit-data.php?id=999&edit=0">update form</a>.
+          To submit students, use the
+          <a href="submit-data.php?id=NEW&edit=0">new data form</a>,
+          noting this mathematician's MGP ID of 999 for the advisor ID.
+        </p>
+      </body>
+    </html>
+    """
+    person = parse_person_html(html, person_id="x")
+    payload = person.to_dict()
+    advisors = payload["degrees"][0]["advisors"]
+    assert advisors == [{"name": "Real Advisor", "id": "12345", "href_raw": "id.php?id=12345"}]
 
 
 def test_parse_57670_multi_advisor(load_fixture_html):
@@ -112,3 +141,15 @@ def test_parse_75750_students_table(load_fixture_html):
     assert students[0]["school_raw"] == "Indiana University"
     assert students[0]["year"]["kind"] == "year"
     assert students[0]["year"]["value"] == 2009
+
+
+def test_fixture_parsing_excludes_footer_form_links(load_fixture_html):
+    person = parse_person_html(load_fixture_html("128986"), person_id="128986")
+    payload = person.to_dict()
+    advisor_names = [
+        advisor["name"]
+        for degree in payload["degrees"]
+        for advisor in degree["advisors"]
+    ]
+    assert "update form" not in advisor_names
+    assert "new data form" not in advisor_names
