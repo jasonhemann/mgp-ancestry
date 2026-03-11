@@ -10,15 +10,65 @@ requires-python = ">=3.13"
 readme = "README.md"
 license = {text = "MIT"}
 
+[project.scripts]
+genealogy-tree = "genealogy_tree.cli:main"
+
 [build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+package-dir = { "" = "src" }
 
-[tool.pdm]
-distribution = true
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-q --cov=src/genealogy_tree --cov-report=term-missing --cov-fail-under=85"
+
+[tool.coverage.run]
+source = ["src/genealogy_tree"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == '__main__':",
+    "raise NotImplementedError",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py313"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.flake8]
+ignore = ["E203", "E266", "E501", "W391", "W503"]
+max-line-length = 100
+max-complexity = 18
+exclude = [".venv/", ".git/", "__pycache__/", "build/", "dist/"]
+
+[tool.mypy]
+files = ["src", "tests"]
+ignore_missing_imports = true
+disable_error_code = ["import-untyped"]
+
 
 [dependency-groups]
 dev = [
+    "black>=24.10.0",
+    "flake8>=7.1.1",
+    "flake8-pyproject>=1.2.3",
+    "isort>=5.13.2",
     "lmql>=0.7.3",
+    "mypy>=1.13.0",
+    "pre-commit>=4.2.0",
+    "pytest>=8.3.5",
+    "pytest-cov>=6.0.0",
+    "pytest-mock>=3.14.0",
+    "types-requests>=2.32.4.20250611",
 ]
