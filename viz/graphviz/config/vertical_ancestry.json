@@ -1,0 +1,31 @@
+{
+  "graph": {
+    "rankdir": "BT",
+    "splines": "true",
+    "overlap": "false",
+    "nodesep": 0.35,
+    "ranksep": 0.9,
+    "bgcolor": "white"
+  },
+  "node": {
+    "shape": "box",
+    "style": "rounded,filled",
+    "fillcolor": "#f8fafc",
+    "color": "#334155",
+    "fontname": "Helvetica",
+    "fontsize": 10
+  },
+  "edge": {
+    "color": "#64748b",
+    "arrowsize": 0.7,
+    "fontname": "Helvetica",
+    "fontsize": 9,
+    "penwidth_min": 0.8,
+    "penwidth_step": 0.45,
+    "penwidth_max": 3.2
+  },
+  "start_node": {
+    "fillcolor": "#dbeafe",
+    "color": "#1d4ed8"
+  }
+}

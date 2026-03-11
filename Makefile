@@ -1,4 +1,4 @@
-.PHONY: format lint typecheck test check
+.PHONY: format lint typecheck test check viz-gephi-open viz-graphviz
 
 BLACK = .venv/bin/black
 ISORT = .venv/bin/isort
@@ -20,3 +20,13 @@ test:
 	$(PYTEST)
 
 check: lint typecheck test
+
+INPUT ?= out/lineage_75750.json
+ID ?= 75750
+FORMAT ?= all
+
+viz-gephi-open:
+	$(MAKE) -C viz gephi-open
+
+viz-graphviz:
+	$(MAKE) -C viz graphviz-render INPUT="$(abspath $(INPUT))" ID="$(ID)" FORMAT="$(FORMAT)"
