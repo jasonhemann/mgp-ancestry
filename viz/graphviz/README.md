@@ -6,12 +6,19 @@ This backend provides a standalone renderer for lineage JSON.
 
 - `renderer/render_graphviz.py`
 
-It reads `out/lineage_<id>.json`, collapses parallel edges by `(source,target)`, and emits a layered vertical DAG.
+It reads `out/lineage_<id>.json`, collapses parallel edges by `(source,target)`, and emits a vertical DAG.
+Depth-derived rank groups are intentionally not forced, so `dot` can reduce crossings more aggressively.
 
 Default orientation is `rankdir=BT`:
 
 - junior/start person near the bottom
 - older advisors above
+
+Default crossing controls:
+
+- `newrank=true`
+- `remincross=true`
+- `mclimit=10`
 
 ## Config
 

@@ -12,6 +12,7 @@ import sys
 from typing import Any
 
 YEAR_RE = re.compile(r"\b(\d{4})\b")
+WHITESPACE_RE = re.compile(r"\s+")
 TRUTHY = {"1", "true", "yes", "on"}
 FALSY = {"0", "false", "no", "off"}
 
@@ -89,6 +90,11 @@ def trim_label(text: str, max_chars: int) -> str:
     if max_chars <= 3:
         return text[:max_chars]
     return text[: max_chars - 3] + "..."
+
+
+def normalize_display_name(name: str) -> str:
+    collapsed = WHITESPACE_RE.sub(" ", name).strip()
+    return collapsed or "Unknown"
 
 
 def dot_escape(value: str) -> str:
@@ -207,6 +213,9 @@ def build_dot(
         "rankdir": str(config_get(config, "graph", "rankdir", "BT")),
         "splines": str(config_get(config, "graph", "splines", "true")),
         "overlap": str(config_get(config, "graph", "overlap", "false")),
+        "newrank": str(config_get(config, "graph", "newrank", "true")),
+        "remincross": str(config_get(config, "graph", "remincross", "true")),
+        "mclimit": str(config_get(config, "graph", "mclimit", 10)),
         "nodesep": str(config_get(config, "graph", "nodesep", 0.35)),
         "ranksep": str(config_get(config, "graph", "ranksep", 0.9)),
         "bgcolor": str(config_get(config, "graph", "bgcolor", "white")),
@@ -242,17 +251,18 @@ def build_dot(
 
     for node_id in sorted(nodes.keys(), key=lambda n: (depths.get(n, 10**9), n)):
         node_payload = nodes.get(node_id, {}) if isinstance(nodes, dict) else {}
-        name = str(node_payload.get("name", "Unknown"))
-        label = trim_label(name, max_label_chars)
+        raw_name = str(node_payload.get("name", "Unknown"))
+        display_name = normalize_display_name(raw_name)
+        label = trim_label(display_name, max_label_chars)
 
         if include_year:
             year = earliest_degree_year(node_payload if isinstance(node_payload, dict) else {})
             if year is not None:
-                label = f"{label}\\n({year})"
+                label = f"{label} ({year})"
 
         node_attrs: dict[str, Any] = {
             "label": label,
-            "tooltip": f"{node_id} | {name}",
+            "tooltip": f"{node_id} | {display_name}",
         }
         url = str(node_payload.get("url", "")) if isinstance(node_payload, dict) else ""
         if url:
@@ -263,17 +273,6 @@ def build_dot(
             node_attrs["color"] = start_color
 
         lines.append(f'  "{dot_escape(node_id)}" [{attrs_to_dot(node_attrs)}];')
-
-    ranks: dict[int, list[str]] = defaultdict(list)
-    for node_id, depth in depths.items():
-        ranks[depth].append(node_id)
-
-    for depth in sorted(ranks.keys()):
-        lines.append(f"  subgraph rank_depth_{depth} {{")
-        lines.append("    rank=same;")
-        for node_id in sorted(ranks[depth]):
-            lines.append(f'    "{dot_escape(node_id)}";')
-        lines.append("  }")
 
     for edge in collapsed_edges:
         penwidth = max(penwidth_min, min(penwidth_max, penwidth_min + (edge.multiplicity - 1) * penwidth_step))

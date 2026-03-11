@@ -3,6 +3,9 @@
     "rankdir": "BT",
     "splines": "true",
     "overlap": "false",
+    "newrank": "true",
+    "remincross": "true",
+    "mclimit": 10,
     "nodesep": 0.35,
     "ranksep": 0.9,
     "bgcolor": "white"

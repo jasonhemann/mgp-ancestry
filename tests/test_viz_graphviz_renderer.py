@@ -30,7 +30,7 @@ def _lineage_fixture() -> dict:
         "nodes": {
             "1": {
                 "id": "1",
-                "name": "Root Person",
+                "name": "Root  Person",
                 "url": "https://example.test/1",
                 "degrees": [
                     {
@@ -96,8 +96,14 @@ def test_collapse_edges_and_dot_contract():
     assert len(resolved) == 3
     assert len(collapsed) == 2
     assert 'rankdir="BT"' in dot_text
+    assert 'newrank="true"' in dot_text
+    assert 'remincross="true"' in dot_text
+    assert 'mclimit="10"' in dot_text
     assert dot_text.count('"1" -> "2"') == 1
     assert 'label="x2"' in dot_text
+    assert 'label="Root Person (2000)"' in dot_text
+    assert '\\\\n(2000)' not in dot_text
+    assert "subgraph rank_depth_" not in dot_text
 
 
 def test_renderer_script_smoke_svg(tmp_path: Path):
