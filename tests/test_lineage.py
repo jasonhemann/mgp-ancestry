@@ -53,7 +53,7 @@ def test_dfs_dag_dedup():
     def loader(person_id: str) -> PersonRecord:
         return people[person_id]
 
-    graph = build_advisor_graph("1", loader, config=TraversalConfig(max_depth=10, max_nodes=10, direction="advisor"))
+    graph = build_advisor_graph("1", loader, config=TraversalConfig(max_depth=10, max_nodes=10))
     payload = graph.to_dict()
 
     assert payload["visit_order"] == ["1", "2", "4", "3"]
@@ -68,7 +68,7 @@ def test_depth_limit():
     graph = build_advisor_graph(
         "1",
         lambda person_id: people[person_id],
-        config=TraversalConfig(max_depth=1, max_nodes=20, direction="advisor"),
+        config=TraversalConfig(max_depth=1, max_nodes=20),
     )
     payload = graph.to_dict()
     assert set(payload["nodes"].keys()) == {"1", "2", "3"}
@@ -79,7 +79,7 @@ def test_stop_id():
     graph = build_advisor_graph(
         "1",
         lambda person_id: people[person_id],
-        config=TraversalConfig(max_depth=10, max_nodes=20, stop_ids={"2"}, direction="advisor"),
+        config=TraversalConfig(max_depth=10, max_nodes=20, stop_ids={"2"}),
     )
     payload = graph.to_dict()
     # 2 is loaded but its advisors are not expanded.
@@ -92,7 +92,7 @@ def test_max_nodes_cap():
     graph = build_advisor_graph(
         "1",
         lambda person_id: people[person_id],
-        config=TraversalConfig(max_depth=10, max_nodes=2, direction="advisor"),
+        config=TraversalConfig(max_depth=10, max_nodes=2),
     )
     payload = graph.to_dict()
     assert len(payload["nodes"]) == 2
@@ -111,7 +111,7 @@ def test_checkpoint_resume_roundtrip(tmp_path: Path):
     first = build_advisor_graph(
         "1",
         lambda person_id: people[person_id],
-        config=TraversalConfig(max_depth=10, max_nodes=2, direction="advisor"),
+        config=TraversalConfig(max_depth=10, max_nodes=2),
         checkpoint_path=checkpoint,
     )
     assert first.stats["visited_nodes"] == 2
@@ -122,44 +122,10 @@ def test_checkpoint_resume_roundtrip(tmp_path: Path):
     resumed = build_advisor_graph(
         "1",
         lambda person_id: people[person_id],
-        config=TraversalConfig(max_depth=10, max_nodes=10, direction="advisor"),
+        config=TraversalConfig(max_depth=10, max_nodes=10),
         resume_state=saved,
         checkpoint_path=checkpoint,
     )
     payload = resumed.to_dict()
     assert payload["stats"]["visited_nodes"] == 4
     assert set(payload["nodes"].keys()) == {"1", "2", "3", "4"}
-
-
-def test_student_direction_traversal():
-    people = {
-        "1": _person("1", "Root", [], ["2", "3"]),
-        "2": _person("2", "S2", []),
-        "3": _person("3", "S3", []),
-    }
-    graph = build_advisor_graph(
-        "1",
-        lambda person_id: people[person_id],
-        config=TraversalConfig(max_depth=10, max_nodes=10, direction="student"),
-    )
-    payload = graph.to_dict()
-    assert payload["visit_order"] == ["1", "2", "3"]
-    assert payload["stats"]["advisor_edge_count"] == 0
-    assert payload["stats"]["student_edge_count"] == 2
-
-
-def test_bidirectional_traversal_order():
-    people = {
-        "1": _person("1", "Root", ["2"], ["3"]),
-        "2": _person("2", "Advisor", []),
-        "3": _person("3", "Student", []),
-    }
-    graph = build_advisor_graph(
-        "1",
-        lambda person_id: people[person_id],
-        config=TraversalConfig(max_depth=10, max_nodes=10, direction="both"),
-    )
-    payload = graph.to_dict()
-    assert payload["visit_order"] == ["1", "2", "3"]
-    assert payload["stats"]["advisor_edge_count"] == 1
-    assert payload["stats"]["student_edge_count"] == 1

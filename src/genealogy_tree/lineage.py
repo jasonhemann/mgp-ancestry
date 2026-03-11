@@ -24,7 +24,6 @@ class TraversalConfig:
     stop_ids: set[str] | None = None
     stop_names: set[str] | None = None
     exhaustive: bool = False
-    direction: str = "advisor"
 
     def normalized_stop_ids(self) -> set[str]:
         return set(self.stop_ids or set())
@@ -40,7 +39,6 @@ class TraversalConfig:
             "stop_ids": sorted(self.normalized_stop_ids()),
             "stop_names": sorted(self.normalized_stop_names()),
             "exhaustive": self.exhaustive,
-            "direction": self.direction,
         }
 
 
@@ -175,50 +173,27 @@ def _collect_next_nodes(
     person: PersonRecord,
     person_id: str,
     depth: int,
-    include_advisors: bool,
-    include_students: bool,
     edges: list[EdgeRecord],
     stats: dict,
 ) -> list[tuple[str, int]]:
     next_nodes: list[tuple[str, int]] = []
-    if include_advisors:
-        for degree_index, degree in enumerate(person.degrees):
-            for advisor_slot, advisor in enumerate(degree.advisors, start=1):
-                edges.append(
-                    EdgeRecord(
-                        relation_kind="advisor",
-                        from_person_id=person_id,
-                        to_person_id=advisor.id,
-                        relation_slot=advisor_slot,
-                        relation_name_raw=advisor.name,
-                        from_degree_index=degree_index,
-                        href_raw=advisor.href_raw,
-                    )
-                )
-                stats["edge_count"] += 1
-                stats["advisor_edge_count"] += 1
-                if advisor.id:
-                    next_nodes.append((advisor.id, depth + 1))
-
-    if include_students:
-        for student_slot, student in enumerate(person.students, start=1):
+    for degree_index, degree in enumerate(person.degrees):
+        for advisor_slot, advisor in enumerate(degree.advisors, start=1):
             edges.append(
                 EdgeRecord(
-                    relation_kind="student",
+                    relation_kind="advisor",
                     from_person_id=person_id,
-                    to_person_id=student.id,
-                    relation_slot=student_slot,
-                    relation_name_raw=student.name,
-                    href_raw=student.href_raw,
-                    institution_raw=student.school_raw,
-                    year_value=student.year_value,
-                    year_text=student.year_text,
+                    to_person_id=advisor.id,
+                    relation_slot=advisor_slot,
+                    relation_name_raw=advisor.name,
+                    from_degree_index=degree_index,
+                    href_raw=advisor.href_raw,
                 )
             )
             stats["edge_count"] += 1
-            stats["student_edge_count"] += 1
-            if student.id:
-                next_nodes.append((student.id, depth + 1))
+            stats["advisor_edge_count"] += 1
+            if advisor.id:
+                next_nodes.append((advisor.id, depth + 1))
     return next_nodes
 
 
@@ -271,11 +246,6 @@ def build_advisor_graph(
     stop_ids = traversal_config.normalized_stop_ids()
     stop_names = traversal_config.normalized_stop_names()
     exhaustive = traversal_config.exhaustive
-    direction = traversal_config.direction
-    if direction not in {"advisor", "student", "both"}:
-        raise ValueError(f"Invalid traversal direction: {direction}")
-    include_advisors = direction in {"advisor", "both"}
-    include_students = direction in {"student", "both"}
 
     default_stats = {
         "visited_nodes": 0,
@@ -286,7 +256,6 @@ def build_advisor_graph(
         "max_nodes_hits": 0,
         "hard_cap_hits": 0,
         "advisor_edge_count": 0,
-        "student_edge_count": 0,
     }
     stack, visited, nodes, edges, visit_order, warnings, stats = _initialize_state(
         start_id_str=start_id_str,
@@ -335,8 +304,6 @@ def build_advisor_graph(
             person=person,
             person_id=person_id,
             depth=depth,
-            include_advisors=include_advisors,
-            include_students=include_students,
             edges=edges,
             stats=stats,
         )

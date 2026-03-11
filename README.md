@@ -41,16 +41,11 @@ Key options:
 genealogy-tree build 75750 \
   --max-depth 20 \
   --max-nodes 500 \
-  --direction advisor \
   --stop-id 2185 \
   --stop-name "Carl Friedrich Gauß"
 ```
 
-Direction modes:
-
-- `advisor` (default): traverse advisors only (upward lineage).
-- `student`: traverse students only (downward descendants).
-- `both`: traverse advisors and students from each visited node.
+Traversal direction is upward-only: person to all listed advisors.
 
 Use exhaustive mode when you intentionally want to traverse further:
 

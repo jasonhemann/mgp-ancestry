@@ -34,29 +34,19 @@ def render_markdown_lineage(graph: GraphResult) -> str:
     nodes = data["nodes"]
     edges = data["edges"]
     stats = data["stats"]
-    direction = data.get("config", {}).get("direction", "advisor")
 
     adjacency: dict[str, list[dict]] = defaultdict(list)
     for edge in edges:
         adjacency[edge["from_person_id"]].append(edge)
 
     start_node = nodes.get(start_id, {"name": "Unknown"})
-    if direction == "student":
-        title = f"# Student Descendant Graph for {start_node['name']} ({start_id})"
-    elif direction == "both":
-        title = f"# Bidirectional Lineage for {start_node['name']} ({start_id})"
-    else:
-        title = f"# Advisor Lineage for {start_node['name']} ({start_id})"
-
     lines: list[str] = [
-        title,
+        f"# Advisor Lineage for {start_node['name']} ({start_id})",
         "",
         "## Run Summary",
-        f"- Direction: {direction}",
         f"- Nodes visited: {stats.get('visited_nodes', 0)}",
         f"- Edges collected: {stats.get('edge_count', 0)}",
         f"- Advisor edges: {stats.get('advisor_edge_count', 0)}",
-        f"- Student edges: {stats.get('student_edge_count', 0)}",
         f"- Revisited skips: {stats.get('revisited_skips', 0)}",
     ]
 

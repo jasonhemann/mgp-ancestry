@@ -27,7 +27,6 @@ def _build_parser() -> argparse.ArgumentParser:
     build_parser.add_argument("--max-nodes-hard", type=int, default=DEFAULT_MAX_NODES_HARD)
     build_parser.add_argument("--stop-id", action="append", default=[])
     build_parser.add_argument("--stop-name", action="append", default=[])
-    build_parser.add_argument("--direction", choices=["advisor", "student", "both"], default="advisor")
     build_parser.add_argument("--exhaustive", action="store_true")
     build_parser.add_argument("--refresh", action="store_true")
     build_parser.add_argument("--snapshot-dir", default=DEFAULT_SNAPSHOT_DIR)
@@ -55,7 +54,6 @@ def _resolve_traversal_config(args: argparse.Namespace) -> TraversalConfig:
         stop_ids={str(value) for value in args.stop_id},
         stop_names={value for value in args.stop_name},
         exhaustive=args.exhaustive,
-        direction=args.direction,
     )
 
 
@@ -101,13 +99,7 @@ def _run_build(args: argparse.Namespace) -> int:
 
     print(f"Wrote JSON: {json_path}")
     print(f"Wrote Markdown: {md_path}")
-    print(
-        "Visited nodes: "
-        f"{graph.stats['visited_nodes']}, "
-        f"edges: {graph.stats['edge_count']} "
-        f"(advisor={graph.stats.get('advisor_edge_count', 0)}, "
-        f"student={graph.stats.get('student_edge_count', 0)})"
-    )
+    print(f"Visited nodes: {graph.stats['visited_nodes']}, edges: {graph.stats['edge_count']}")
     return 0
 
 
