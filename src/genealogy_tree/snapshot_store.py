@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import time
 from collections.abc import Callable
+from typing import cast
 
 import requests
 
@@ -23,7 +24,7 @@ class SnapshotRecord:
     html: str
     html_path: Path
     meta_path: Path
-    meta: dict
+    meta: dict[str, object]
 
 
 class SnapshotStore:
@@ -38,14 +39,14 @@ class SnapshotStore:
         sleep_fn: Callable[[float], None] = time.sleep,
         monotonic_fn: Callable[[], float] = time.monotonic,
     ) -> None:
-        self.snapshot_dir = Path(snapshot_dir)
+        self.snapshot_dir: Path = Path(snapshot_dir)
         self.snapshot_dir.mkdir(parents=True, exist_ok=True)
-        self.crawl_delay_seconds = crawl_delay_seconds
-        self.parser_version = parser_version
-        self.timeout_seconds = timeout_seconds
-        self.session = session or requests.Session()
-        self.sleep_fn = sleep_fn
-        self.monotonic_fn = monotonic_fn
+        self.crawl_delay_seconds: float = crawl_delay_seconds
+        self.parser_version: str = parser_version
+        self.timeout_seconds: float = timeout_seconds
+        self.session: requests.Session = session or requests.Session()
+        self.sleep_fn: Callable[[float], None] = sleep_fn
+        self.monotonic_fn: Callable[[], float] = monotonic_fn
         self._last_fetch_monotonic: float | None = None
 
     def _paths_for_id(self, person_id: str) -> tuple[Path, Path]:
@@ -60,10 +61,16 @@ class SnapshotStore:
     def load_snapshot(self, person_id: str) -> SnapshotRecord:
         html_path, meta_path = self._paths_for_id(person_id)
         html = html_path.read_text(encoding="utf-8")
-        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        raw_meta_obj = cast(object, json.loads(meta_path.read_text(encoding="utf-8")))
+        meta: dict[str, object] = {}
+        if isinstance(raw_meta_obj, dict):
+            for key, value in cast(dict[object, object], raw_meta_obj).items():
+                meta[str(key)] = value
+        url_value = meta.get("url")
+        url = str(url_value) if url_value is not None else f"{BASE_MGP_ID_URL}{person_id}"
         return SnapshotRecord(
             id=str(person_id),
-            url=str(meta.get("url", f"{BASE_MGP_ID_URL}{person_id}")),
+            url=url,
             html=html,
             html_path=html_path,
             meta_path=meta_path,
@@ -95,11 +102,11 @@ class SnapshotStore:
         self._last_fetch_monotonic = self.monotonic_fn()
 
         html_path, meta_path = self._paths_for_id(person_id)
-        html_path.write_text(fetch_result.text, encoding="utf-8")
+        _ = html_path.write_text(fetch_result.text, encoding="utf-8")
 
         digest = sha256(fetch_result.text.encode("utf-8")).hexdigest()
         fetched_at_utc = datetime.now(timezone.utc).isoformat()
-        meta = {
+        meta: dict[str, object] = {
             "id": str(person_id),
             "url": fetch_result.url,
             "fetched_at_utc": fetched_at_utc,
@@ -108,7 +115,7 @@ class SnapshotStore:
             "content_length": len(fetch_result.text),
             "parser_version": self.parser_version,
         }
-        meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+        _ = meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
         return SnapshotRecord(
             id=str(person_id),
             url=fetch_result.url,

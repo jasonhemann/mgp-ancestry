@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
 from pathlib import Path
-from typing import Callable
+from typing import cast
 
 from .models import (
     EdgeRecord,
@@ -14,6 +15,51 @@ from .models import (
     SCHEMA_VERSION,
     normalize_person_name,
 )
+
+type StackItem = tuple[str, int]
+type StatsDict = dict[str, int]
+
+
+def _coerce_str(value: object, default: str = "") -> str:
+    if value is None:
+        return default
+    return str(value)
+
+
+def _coerce_int(value: object, default: int = 0) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return default
+    return default
+
+
+def _as_mapping(value: object) -> Mapping[str, object]:
+    if isinstance(value, Mapping):
+        return cast(Mapping[str, object], value)
+    return {}
+
+
+def _as_object_list(value: object) -> list[object]:
+    if isinstance(value, list):
+        return list(cast(list[object], value))
+    if isinstance(value, tuple):
+        return list(cast(tuple[object, ...], value))
+    return []
+
+
+def _as_object_dict(value: object) -> dict[str, object]:
+    if not isinstance(value, Mapping):
+        return {}
+    mapping = cast(Mapping[object, object], value)
+    return {str(key): item for key, item in mapping.items()}
 
 
 @dataclass(slots=True)
@@ -31,7 +77,7 @@ class TraversalConfig:
     def normalized_stop_names(self) -> set[str]:
         return {normalize_person_name(name) for name in (self.stop_names or set())}
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, object]:
         return {
             "max_depth": self.max_depth,
             "max_nodes": self.max_nodes,
@@ -42,17 +88,18 @@ class TraversalConfig:
         }
 
 
-def load_checkpoint(checkpoint_path: str | Path) -> dict:
+def load_checkpoint(checkpoint_path: str | Path) -> dict[str, object]:
     path = Path(checkpoint_path)
-    return json.loads(path.read_text(encoding="utf-8"))
+    payload_obj = cast(object, json.loads(path.read_text(encoding="utf-8")))
+    return _as_object_dict(payload_obj)
 
 
-def _serialize_open_stack(stack: list[tuple[str, int]]) -> list[dict]:
+def _serialize_open_stack(stack: list[StackItem]) -> list[dict[str, object]]:
     return [{"id": person_id, "depth": depth} for person_id, depth in stack]
 
 
-def _deserialize_open_stack(payload: list[dict]) -> list[tuple[str, int]]:
-    return [(str(item["id"]), int(item["depth"])) for item in payload]
+def _deserialize_open_stack(payload: list[dict[str, object]]) -> list[StackItem]:
+    return [(_coerce_str(item.get("id"), ""), _coerce_int(item.get("depth"), 0)) for item in payload]
 
 
 def _write_checkpoint(
@@ -60,16 +107,16 @@ def _write_checkpoint(
     *,
     start_id: str,
     config: TraversalConfig,
-    stack: list[tuple[str, int]],
+    stack: list[StackItem],
     visited: set[str],
     nodes: dict[str, PersonRecord],
     edges: list[EdgeRecord],
     visit_order: list[str],
-    stats: dict,
+    stats: StatsDict,
     warnings: list[str],
     complete: bool,
 ) -> None:
-    checkpoint_payload = {
+    checkpoint_payload: dict[str, object] = {
         "schema_version": SCHEMA_VERSION,
         "generator_version": GENERATOR_VERSION,
         "start_id": start_id,
@@ -85,7 +132,7 @@ def _write_checkpoint(
         "updated_at_utc": datetime.now(timezone.utc).isoformat(),
     }
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
-    checkpoint_path.write_text(
+    _ = checkpoint_path.write_text(
         json.dumps(checkpoint_payload, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
@@ -94,32 +141,45 @@ def _write_checkpoint(
 def _initialize_state(
     *,
     start_id_str: str,
-    resume_state: dict | None,
-    default_stats: dict,
+    resume_state: dict[str, object] | None,
+    default_stats: StatsDict,
 ) -> tuple[
-    list[tuple[str, int]],
+    list[StackItem],
     set[str],
     dict[str, PersonRecord],
     list[EdgeRecord],
     list[str],
     list[str],
-    dict,
+    StatsDict,
 ]:
     if resume_state:
-        stack = _deserialize_open_stack(resume_state.get("open_stack", []))
+        open_stack_payload = [
+            _as_object_dict(item) for item in _as_object_list(resume_state.get("open_stack", []))
+        ]
+        stack = _deserialize_open_stack(open_stack_payload)
         if not stack:
             stack = [(start_id_str, 0)]
-        visited = set(str(v) for v in resume_state.get("visited_ids", []))
-        nodes = {
-            str(node_id): PersonRecord.from_dict(node_payload)
-            for node_id, node_payload in resume_state.get("nodes", {}).items()
+
+        visited: set[str] = {
+            _coerce_str(v) for v in _as_object_list(resume_state.get("visited_ids", []))
         }
-        edges = [EdgeRecord.from_dict(item) for item in resume_state.get("edges", [])]
-        visit_order = [str(v) for v in resume_state.get("visit_order", [])]
-        warnings = [str(v) for v in resume_state.get("warnings", [])]
-        stats = dict(default_stats)
-        stats.update(resume_state.get("stats", {}))
-        if str(resume_state.get("start_id", start_id_str)) != start_id_str:
+
+        nodes: dict[str, PersonRecord] = {}
+        for node_id, node_payload in _as_object_dict(resume_state.get("nodes", {})).items():
+            nodes[_coerce_str(node_id)] = PersonRecord.from_dict(_as_mapping(node_payload))
+
+        edges = [
+            EdgeRecord.from_dict(_as_mapping(item))
+            for item in _as_object_list(resume_state.get("edges", []))
+        ]
+        visit_order = [_coerce_str(v) for v in _as_object_list(resume_state.get("visit_order", []))]
+        warnings = [_coerce_str(v) for v in _as_object_list(resume_state.get("warnings", []))]
+
+        stats: StatsDict = dict(default_stats)
+        for key, raw_value in _as_object_dict(resume_state.get("stats", {})).items():
+            stats[_coerce_str(key)] = _coerce_int(raw_value, stats.get(_coerce_str(key), 0))
+
+        if _coerce_str(resume_state.get("start_id"), start_id_str) != start_id_str:
             warnings.append(
                 "Resume checkpoint start_id mismatch with CLI start_id; continuing with CLI start_id."
             )
@@ -141,8 +201,8 @@ def _preload_status(
     visited: set[str],
     traversal_config: TraversalConfig,
     exhaustive: bool,
-    stack: list[tuple[str, int]],
-    stats: dict,
+    stack: list[StackItem],
+    stats: StatsDict,
     warnings: list[str],
 ) -> str:
     if person_id in visited:
@@ -174,9 +234,9 @@ def _collect_next_nodes(
     person_id: str,
     depth: int,
     edges: list[EdgeRecord],
-    stats: dict,
-) -> list[tuple[str, int]]:
-    next_nodes: list[tuple[str, int]] = []
+    stats: StatsDict,
+) -> list[StackItem]:
+    next_nodes: list[StackItem] = []
     for degree_index, degree in enumerate(person.degrees):
         for advisor_slot, advisor in enumerate(degree.advisors, start=1):
             edges.append(
@@ -201,10 +261,10 @@ def _maybe_checkpoint(
     *,
     checkpoint_path_obj: Path | None,
     checkpoint_every_nodes: int,
-    stats: dict,
+    stats: StatsDict,
     start_id_str: str,
     traversal_config: TraversalConfig,
-    stack: list[tuple[str, int]],
+    stack: list[StackItem],
     visited: set[str],
     nodes: dict[str, PersonRecord],
     edges: list[EdgeRecord],
@@ -235,7 +295,7 @@ def build_advisor_graph(
     person_loader: Callable[[str], PersonRecord],
     *,
     config: TraversalConfig | None = None,
-    resume_state: dict | None = None,
+    resume_state: dict[str, object] | None = None,
     checkpoint_path: str | Path | None = None,
     checkpoint_every_nodes: int = 1,
 ) -> GraphResult:
@@ -247,7 +307,7 @@ def build_advisor_graph(
     stop_names = traversal_config.normalized_stop_names()
     exhaustive = traversal_config.exhaustive
 
-    default_stats = {
+    default_stats: StatsDict = {
         "visited_nodes": 0,
         "edge_count": 0,
         "revisited_skips": 0,
@@ -263,7 +323,6 @@ def build_advisor_graph(
         default_stats=default_stats,
     )
 
-    # Ensure visitation invariants if checkpoint content was manually edited.
     visited.update(nodes.keys())
     terminated_early = False
 
@@ -308,7 +367,6 @@ def build_advisor_graph(
             stats=stats,
         )
 
-        # Push in reverse so relation ordering remains stable in DFS.
         for next_id, next_depth in reversed(next_nodes):
             stack.append((next_id, next_depth))
 
@@ -358,7 +416,7 @@ def build_lineage_graph(
     person_loader: Callable[[str], PersonRecord],
     *,
     config: TraversalConfig | None = None,
-    resume_state: dict | None = None,
+    resume_state: dict[str, object] | None = None,
     checkpoint_path: str | Path | None = None,
     checkpoint_every_nodes: int = 1,
 ) -> GraphResult:

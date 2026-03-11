@@ -8,15 +8,16 @@ from .parser import parse_person_html
 BASE_URL = "https://genealogy.math.ndsu.nodak.edu/id.php?id="
 
 
-def parse_mgp_page(page_html: str) -> dict:
+def parse_mgp_page(page_html: str) -> dict[str, object]:
     """
     Compatibility function retained for older imports.
     Parses a single MGP page HTML and returns a dictionary payload.
     """
-    return parse_person_html(page_html).to_dict()
+    payload = parse_person_html(page_html).to_dict()
+    return {str(key): value for key, value in payload.items()}
 
 
-def fetch_and_parse_mgp(id_number: int | str) -> dict:
+def fetch_and_parse_mgp(id_number: int | str) -> dict[str, object]:
     """
     Compatibility function retained for older imports.
     Fetches a single MGP page by ID and parses it.
@@ -24,7 +25,8 @@ def fetch_and_parse_mgp(id_number: int | str) -> dict:
     person_id = str(id_number)
     url = f"{BASE_URL}{person_id}"
     fetch_result = fetch_with_retries(url)
-    return parse_person_html(fetch_result.text, person_id=person_id, url=fetch_result.url).to_dict()
+    payload = parse_person_html(fetch_result.text, person_id=person_id, url=fetch_result.url).to_dict()
+    return {str(key): value for key, value in payload.items()}
 
 
 if __name__ == "__main__":

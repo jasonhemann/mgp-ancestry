@@ -115,8 +115,7 @@ def _parse_institutions(
         return institutions
 
     parse_warnings.append(
-        "Country/institution count mismatch for degree block: "
-        f"{len(parts)} institution names vs {len(countries_raw)} country flags."
+        f"Country/institution count mismatch for degree block: {len(parts)} institution names vs {len(countries_raw)} country flags."
     )
 
     if len(parts) == 1:
@@ -186,8 +185,6 @@ def _parse_degree_siblings(degree_div: Tag) -> tuple[str, list[AdvisorRef]]:
 def _parse_students(soup: BeautifulSoup) -> list[StudentRef]:
     students_header = None
     for paragraph in soup.find_all("p"):
-        if not isinstance(paragraph, Tag):
-            continue
         text = paragraph.get_text(" ", strip=True).lower()
         if "students:" in text:
             students_header = paragraph
@@ -197,13 +194,11 @@ def _parse_students(soup: BeautifulSoup) -> list[StudentRef]:
         return []
 
     table = students_header.find_next("table")
-    if table is None or not isinstance(table, Tag):
+    if table is None:
         return []
 
     students: list[StudentRef] = []
     for row in table.find_all("tr"):
-        if not isinstance(row, Tag):
-            continue
         if row.find("th") is not None:
             continue
 
@@ -258,8 +253,6 @@ def parse_person_html(
 
     degrees: list[DegreeRecord] = []
     for degree_div in degree_divs:
-        if not isinstance(degree_div, Tag):
-            continue
         raw_text = degree_div.get_text(" ", strip=True)
         flag_tags = degree_div.find_all("img", alt=True)
         countries = [str(tag.attrs.get("alt", "")).strip() for tag in flag_tags if str(tag.attrs.get("alt", "")).strip()]

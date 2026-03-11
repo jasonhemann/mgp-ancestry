@@ -72,7 +72,11 @@ make check
 Or run tools individually:
 
 ```sh
+make sync
+make format
 make lint
+make lint-fix
 make typecheck
 make test
+make coverage
 ```

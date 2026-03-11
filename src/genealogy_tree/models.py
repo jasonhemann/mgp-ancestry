@@ -1,14 +1,35 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any
 import re
+from typing import Literal, TypedDict, cast
 
 PARSER_VERSION = "1.0.0"
 SCHEMA_VERSION = "1.0.0"
 GENERATOR_VERSION = PARSER_VERSION
 
-YearValue = dict[str, Any]
+
+class YearUnknown(TypedDict):
+    kind: Literal["unknown"]
+
+
+class YearSingle(TypedDict):
+    kind: Literal["year"]
+    value: int
+
+
+class YearMany(TypedDict):
+    kind: Literal["years"]
+    values: list[int]
+
+
+class YearRaw(TypedDict):
+    kind: Literal["raw"]
+    text: str
+
+
+type YearValue = YearUnknown | YearSingle | YearMany | YearRaw
 
 
 def year_unknown() -> YearValue:
@@ -48,17 +69,19 @@ def make_year_value(raw_text: str, numeric_years: list[int]) -> YearValue:
 
 
 def year_value_sort_key(value: YearValue) -> tuple[int, int]:
-    kind = value.get("kind", "unknown")
+    kind = value["kind"]
     if kind == "unknown":
         return (0, 0)
     if kind == "year":
-        return (1, int(value["value"]))
+        year_value = cast(YearSingle, value)
+        return (1, int(year_value["value"]))
     if kind == "years":
-        years = [int(y) for y in value.get("values", [])]
+        years_value = cast(YearMany, value)
+        years = [int(y) for y in years_value["values"]]
         return (2, min(years) if years else 0)
 
-    # raw sorts as unknown unless parseable.
-    raw_text = str(value.get("text", ""))
+    raw_value = cast(YearRaw, value)
+    raw_text = raw_value["text"]
     years = extract_numeric_years(raw_text)
     if len(years) == 1:
         return (1, years[0])
@@ -71,9 +94,59 @@ def normalize_person_name(name: str) -> str:
     return " ".join(name.casefold().split())
 
 
-def _coerce_year_value(raw_value: Any) -> YearValue:
-    if isinstance(raw_value, dict):
-        return dict(raw_value)
+def _coerce_str(value: object, default: str = "") -> str:
+    if value is None:
+        return default
+    return str(value)
+
+
+def _coerce_optional_str(value: object) -> str | None:
+    if value is None:
+        return None
+    return str(value)
+
+
+def _coerce_int(value: object, default: int = 0) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return default
+    return default
+
+
+def _as_mapping(value: object) -> Mapping[str, object]:
+    if isinstance(value, Mapping):
+        return cast(Mapping[str, object], value)
+    return {}
+
+
+def _as_object_list(value: object) -> list[object]:
+    if isinstance(value, list):
+        list_value = cast(list[object], value)
+        return list(list_value)
+    if isinstance(value, tuple):
+        tuple_value = cast(tuple[object, ...], value)
+        return list(tuple_value)
+    return []
+
+
+def _coerce_year_value(raw_value: object) -> YearValue:
+    payload = _as_mapping(raw_value)
+    kind = _coerce_str(payload.get("kind"), "unknown")
+    if kind == "year":
+        return year_single(_coerce_int(payload.get("value"), 0))
+    if kind == "years":
+        values = [_coerce_int(v, 0) for v in _as_object_list(payload.get("values"))]
+        return year_many(values)
+    if kind == "raw":
+        return year_raw(_coerce_str(payload.get("text"), ""))
     return year_unknown()
 
 
@@ -88,7 +161,7 @@ class InstitutionRecord:
             return self.countries_raw[0]
         return ""
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         return {
             "name_raw": self.name_raw,
             "countries_raw": list(self.countries_raw),
@@ -96,10 +169,10 @@ class InstitutionRecord:
         }
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "InstitutionRecord":
+    def from_dict(cls, payload: Mapping[str, object]) -> "InstitutionRecord":
         return cls(
-            name_raw=str(payload.get("name_raw", "")),
-            countries_raw=[str(v) for v in payload.get("countries_raw", [])],
+            name_raw=_coerce_str(payload.get("name_raw"), ""),
+            countries_raw=[_coerce_str(v) for v in _as_object_list(payload.get("countries_raw"))],
         )
 
 
@@ -109,7 +182,7 @@ class AdvisorRef:
     id: str | None
     href_raw: str = ""
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         return {
             "name": self.name,
             "id": self.id,
@@ -117,13 +190,11 @@ class AdvisorRef:
         }
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "AdvisorRef":
-        raw_id = payload.get("id")
-        advisor_id = str(raw_id) if raw_id is not None else None
+    def from_dict(cls, payload: Mapping[str, object]) -> "AdvisorRef":
         return cls(
-            name=str(payload.get("name", "Unknown")),
-            id=advisor_id,
-            href_raw=str(payload.get("href_raw", "")),
+            name=_coerce_str(payload.get("name"), "Unknown"),
+            id=_coerce_optional_str(payload.get("id")),
+            href_raw=_coerce_str(payload.get("href_raw"), ""),
         )
 
 
@@ -137,7 +208,7 @@ class StudentRef:
     year_text: str = ""
     descendants_text: str = ""
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         return {
             "name": self.name,
             "id": self.id,
@@ -149,18 +220,16 @@ class StudentRef:
         }
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "StudentRef":
-        raw_id = payload.get("id")
-        student_id = str(raw_id) if raw_id is not None else None
-        year_value = _coerce_year_value(payload.get("year", {"kind": "unknown"}))
+    def from_dict(cls, payload: Mapping[str, object]) -> "StudentRef":
+        year_value = _coerce_year_value(payload.get("year"))
         return cls(
-            name=str(payload.get("name", "Unknown")),
-            id=student_id,
-            href_raw=str(payload.get("href_raw", "")),
-            school_raw=str(payload.get("school_raw", "")),
+            name=_coerce_str(payload.get("name"), "Unknown"),
+            id=_coerce_optional_str(payload.get("id")),
+            href_raw=_coerce_str(payload.get("href_raw"), ""),
+            school_raw=_coerce_str(payload.get("school_raw"), ""),
             year_value=year_value,
-            year_text=str(payload.get("year_text", "")),
-            descendants_text=str(payload.get("descendants_text", "")),
+            year_text=_coerce_str(payload.get("year_text"), ""),
+            descendants_text=_coerce_str(payload.get("descendants_text"), ""),
         )
 
 
@@ -173,7 +242,7 @@ class DegreeRecord:
     dissertation: str
     advisors: list[AdvisorRef]
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         return {
             "degree_type": self.degree_type,
             "institutions": [item.to_dict() for item in self.institutions],
@@ -184,15 +253,19 @@ class DegreeRecord:
         }
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "DegreeRecord":
-        year_value = _coerce_year_value(payload.get("year", {"kind": "unknown"}))
+    def from_dict(cls, payload: Mapping[str, object]) -> "DegreeRecord":
+        institutions = [
+            InstitutionRecord.from_dict(_as_mapping(v))
+            for v in _as_object_list(payload.get("institutions"))
+        ]
+        advisors = [AdvisorRef.from_dict(_as_mapping(v)) for v in _as_object_list(payload.get("advisors"))]
         return cls(
-            degree_type=str(payload.get("degree_type", "")),
-            institutions=[InstitutionRecord.from_dict(v) for v in payload.get("institutions", [])],
-            year_value=year_value,
-            year_text=str(payload.get("year_text", "")),
-            dissertation=str(payload.get("dissertation", "")),
-            advisors=[AdvisorRef.from_dict(v) for v in payload.get("advisors", [])],
+            degree_type=_coerce_str(payload.get("degree_type"), ""),
+            institutions=institutions,
+            year_value=_coerce_year_value(payload.get("year")),
+            year_text=_coerce_str(payload.get("year_text"), ""),
+            dissertation=_coerce_str(payload.get("dissertation"), ""),
+            advisors=advisors,
         )
 
 
@@ -206,7 +279,7 @@ class PersonRecord:
     source_snapshot: str = ""
     parse_warnings: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         return {
             "id": self.id,
             "name": self.name,
@@ -218,15 +291,18 @@ class PersonRecord:
         }
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "PersonRecord":
+    def from_dict(cls, payload: Mapping[str, object]) -> "PersonRecord":
+        degrees = [DegreeRecord.from_dict(_as_mapping(v)) for v in _as_object_list(payload.get("degrees"))]
+        students = [StudentRef.from_dict(_as_mapping(v)) for v in _as_object_list(payload.get("students"))]
+        parse_warnings = [_coerce_str(v) for v in _as_object_list(payload.get("parse_warnings"))]
         return cls(
-            id=str(payload.get("id", "")),
-            name=str(payload.get("name", "Unknown")),
-            url=str(payload.get("url", "")),
-            degrees=[DegreeRecord.from_dict(v) for v in payload.get("degrees", [])],
-            students=[StudentRef.from_dict(v) for v in payload.get("students", [])],
-            source_snapshot=str(payload.get("source_snapshot", "")),
-            parse_warnings=[str(v) for v in payload.get("parse_warnings", [])],
+            id=_coerce_str(payload.get("id"), ""),
+            name=_coerce_str(payload.get("name"), "Unknown"),
+            url=_coerce_str(payload.get("url"), ""),
+            degrees=degrees,
+            students=students,
+            source_snapshot=_coerce_str(payload.get("source_snapshot"), ""),
+            parse_warnings=parse_warnings,
         )
 
 
@@ -243,7 +319,7 @@ class EdgeRecord:
     year_value: YearValue = field(default_factory=year_unknown)
     year_text: str = ""
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         return {
             "relation_kind": self.relation_kind,
             "from_person_id": self.from_person_id,
@@ -258,26 +334,38 @@ class EdgeRecord:
         }
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "EdgeRecord":
+    def from_dict(cls, payload: Mapping[str, object]) -> "EdgeRecord":
         target = payload.get("to_person_id")
         if target is None:
             target = payload.get("to_advisor_id")
-        from_degree_index_raw = payload.get("from_degree_index")
-        relation_kind = str(payload.get("relation_kind", "advisor"))
+
+        relation_kind = _coerce_str(payload.get("relation_kind"), "advisor")
         if "to_advisor_id" in payload and "relation_kind" not in payload:
             relation_kind = "advisor"
-        year_value = _coerce_year_value(payload.get("year", {"kind": "unknown"}))
+
+        relation_slot_raw = payload.get("relation_slot")
+        if relation_slot_raw is None:
+            relation_slot_raw = payload.get("advisor_slot", 1)
+
+        from_degree_index_raw = payload.get("from_degree_index")
+        from_degree_index = (
+            _coerce_int(from_degree_index_raw) if from_degree_index_raw is not None else None
+        )
+
         return cls(
             relation_kind=relation_kind,
-            from_person_id=str(payload.get("from_person_id", "")),
-            to_person_id=str(target) if target is not None else None,
-            relation_slot=int(payload.get("relation_slot", payload.get("advisor_slot", 1))),
-            relation_name_raw=str(payload.get("relation_name_raw", payload.get("advisor_name_raw", "Unknown"))),
-            from_degree_index=int(from_degree_index_raw) if from_degree_index_raw is not None else None,
-            href_raw=str(payload.get("href_raw", "")),
-            institution_raw=str(payload.get("institution_raw", "")),
-            year_value=year_value,
-            year_text=str(payload.get("year_text", "")),
+            from_person_id=_coerce_str(payload.get("from_person_id"), ""),
+            to_person_id=_coerce_optional_str(target),
+            relation_slot=_coerce_int(relation_slot_raw, 1),
+            relation_name_raw=_coerce_str(
+                payload.get("relation_name_raw", payload.get("advisor_name_raw", "Unknown")),
+                "Unknown",
+            ),
+            from_degree_index=from_degree_index,
+            href_raw=_coerce_str(payload.get("href_raw"), ""),
+            institution_raw=_coerce_str(payload.get("institution_raw"), ""),
+            year_value=_coerce_year_value(payload.get("year")),
+            year_text=_coerce_str(payload.get("year_text"), ""),
         )
 
 
@@ -287,11 +375,11 @@ class GraphResult:
     nodes: dict[str, PersonRecord]
     edges: list[EdgeRecord]
     visit_order: list[str]
-    stats: dict[str, Any]
+    stats: dict[str, int]
     warnings: list[str]
-    config: dict[str, Any]
+    config: dict[str, object]
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         return {
             "schema_version": SCHEMA_VERSION,
             "generator_version": GENERATOR_VERSION,
