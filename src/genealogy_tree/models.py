@@ -71,6 +71,12 @@ def normalize_person_name(name: str) -> str:
     return " ".join(name.casefold().split())
 
 
+def _coerce_year_value(raw_value: Any) -> YearValue:
+    if isinstance(raw_value, dict):
+        return dict(raw_value)
+    return year_unknown()
+
+
 @dataclass(slots=True)
 class InstitutionRecord:
     name_raw: str
@@ -122,6 +128,43 @@ class AdvisorRef:
 
 
 @dataclass(slots=True)
+class StudentRef:
+    name: str
+    id: str | None
+    href_raw: str = ""
+    school_raw: str = ""
+    year_value: YearValue = field(default_factory=year_unknown)
+    year_text: str = ""
+    descendants_text: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "id": self.id,
+            "href_raw": self.href_raw,
+            "school_raw": self.school_raw,
+            "year": self.year_value,
+            "year_text": self.year_text,
+            "descendants_text": self.descendants_text,
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "StudentRef":
+        raw_id = payload.get("id")
+        student_id = str(raw_id) if raw_id is not None else None
+        year_value = _coerce_year_value(payload.get("year", {"kind": "unknown"}))
+        return cls(
+            name=str(payload.get("name", "Unknown")),
+            id=student_id,
+            href_raw=str(payload.get("href_raw", "")),
+            school_raw=str(payload.get("school_raw", "")),
+            year_value=year_value,
+            year_text=str(payload.get("year_text", "")),
+            descendants_text=str(payload.get("descendants_text", "")),
+        )
+
+
+@dataclass(slots=True)
 class DegreeRecord:
     degree_type: str
     institutions: list[InstitutionRecord]
@@ -142,11 +185,11 @@ class DegreeRecord:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "DegreeRecord":
-        year_value = payload.get("year", {"kind": "unknown"})
+        year_value = _coerce_year_value(payload.get("year", {"kind": "unknown"}))
         return cls(
             degree_type=str(payload.get("degree_type", "")),
             institutions=[InstitutionRecord.from_dict(v) for v in payload.get("institutions", [])],
-            year_value=dict(year_value),
+            year_value=year_value,
             year_text=str(payload.get("year_text", "")),
             dissertation=str(payload.get("dissertation", "")),
             advisors=[AdvisorRef.from_dict(v) for v in payload.get("advisors", [])],
@@ -159,6 +202,7 @@ class PersonRecord:
     name: str
     url: str
     degrees: list[DegreeRecord]
+    students: list[StudentRef] = field(default_factory=list)
     source_snapshot: str = ""
     parse_warnings: list[str] = field(default_factory=list)
 
@@ -168,6 +212,7 @@ class PersonRecord:
             "name": self.name,
             "url": self.url,
             "degrees": [degree.to_dict() for degree in self.degrees],
+            "students": [student.to_dict() for student in self.students],
             "source_snapshot": self.source_snapshot,
             "parse_warnings": list(self.parse_warnings),
         }
@@ -179,6 +224,7 @@ class PersonRecord:
             name=str(payload.get("name", "Unknown")),
             url=str(payload.get("url", "")),
             degrees=[DegreeRecord.from_dict(v) for v in payload.get("degrees", [])],
+            students=[StudentRef.from_dict(v) for v in payload.get("students", [])],
             source_snapshot=str(payload.get("source_snapshot", "")),
             parse_warnings=[str(v) for v in payload.get("parse_warnings", [])],
         )
@@ -186,30 +232,52 @@ class PersonRecord:
 
 @dataclass(slots=True)
 class EdgeRecord:
+    relation_kind: str
     from_person_id: str
-    to_advisor_id: str | None
-    from_degree_index: int
-    advisor_slot: int
-    advisor_name_raw: str
+    to_person_id: str | None
+    relation_slot: int
+    relation_name_raw: str
+    from_degree_index: int | None = None
+    href_raw: str = ""
+    institution_raw: str = ""
+    year_value: YearValue = field(default_factory=year_unknown)
+    year_text: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "relation_kind": self.relation_kind,
             "from_person_id": self.from_person_id,
-            "to_advisor_id": self.to_advisor_id,
+            "to_person_id": self.to_person_id,
+            "relation_slot": self.relation_slot,
+            "relation_name_raw": self.relation_name_raw,
             "from_degree_index": self.from_degree_index,
-            "advisor_slot": self.advisor_slot,
-            "advisor_name_raw": self.advisor_name_raw,
+            "href_raw": self.href_raw,
+            "institution_raw": self.institution_raw,
+            "year": self.year_value,
+            "year_text": self.year_text,
         }
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "EdgeRecord":
-        to_advisor_id = payload.get("to_advisor_id")
+        target = payload.get("to_person_id")
+        if target is None:
+            target = payload.get("to_advisor_id")
+        from_degree_index_raw = payload.get("from_degree_index")
+        relation_kind = str(payload.get("relation_kind", "advisor"))
+        if "to_advisor_id" in payload and "relation_kind" not in payload:
+            relation_kind = "advisor"
+        year_value = _coerce_year_value(payload.get("year", {"kind": "unknown"}))
         return cls(
+            relation_kind=relation_kind,
             from_person_id=str(payload.get("from_person_id", "")),
-            to_advisor_id=str(to_advisor_id) if to_advisor_id is not None else None,
-            from_degree_index=int(payload.get("from_degree_index", 0)),
-            advisor_slot=int(payload.get("advisor_slot", 1)),
-            advisor_name_raw=str(payload.get("advisor_name_raw", "Unknown")),
+            to_person_id=str(target) if target is not None else None,
+            relation_slot=int(payload.get("relation_slot", payload.get("advisor_slot", 1))),
+            relation_name_raw=str(payload.get("relation_name_raw", payload.get("advisor_name_raw", "Unknown"))),
+            from_degree_index=int(from_degree_index_raw) if from_degree_index_raw is not None else None,
+            href_raw=str(payload.get("href_raw", "")),
+            institution_raw=str(payload.get("institution_raw", "")),
+            year_value=year_value,
+            year_text=str(payload.get("year_text", "")),
         )
 
 

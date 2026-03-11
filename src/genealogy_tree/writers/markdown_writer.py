@@ -34,18 +34,29 @@ def render_markdown_lineage(graph: GraphResult) -> str:
     nodes = data["nodes"]
     edges = data["edges"]
     stats = data["stats"]
+    direction = data.get("config", {}).get("direction", "advisor")
 
     adjacency: dict[str, list[dict]] = defaultdict(list)
     for edge in edges:
         adjacency[edge["from_person_id"]].append(edge)
 
     start_node = nodes.get(start_id, {"name": "Unknown"})
+    if direction == "student":
+        title = f"# Student Descendant Graph for {start_node['name']} ({start_id})"
+    elif direction == "both":
+        title = f"# Bidirectional Lineage for {start_node['name']} ({start_id})"
+    else:
+        title = f"# Advisor Lineage for {start_node['name']} ({start_id})"
+
     lines: list[str] = [
-        f"# Advisor Lineage for {start_node['name']} ({start_id})",
+        title,
         "",
         "## Run Summary",
+        f"- Direction: {direction}",
         f"- Nodes visited: {stats.get('visited_nodes', 0)}",
         f"- Edges collected: {stats.get('edge_count', 0)}",
+        f"- Advisor edges: {stats.get('advisor_edge_count', 0)}",
+        f"- Student edges: {stats.get('student_edge_count', 0)}",
         f"- Revisited skips: {stats.get('revisited_skips', 0)}",
     ]
 
@@ -54,7 +65,7 @@ def render_markdown_lineage(graph: GraphResult) -> str:
         lines.extend(["", "## Warnings"])
         lines.extend([f"- {warning}" for warning in warnings])
 
-    lines.extend(["", "## Advisor Tree"])
+    lines.extend(["", "## Traversal Tree"])
     rendered: set[str] = set()
 
     def emit_node(person_id: str, indent: int) -> None:
@@ -79,12 +90,34 @@ def render_markdown_lineage(graph: GraphResult) -> str:
             lines.append(f"{prefix}  - degree {idx}: {_format_degree_payload(degree_payload)}")
 
         for edge in adjacency.get(person_id, []):
-            label = f"advisor {edge['advisor_slot']} (degree {edge['from_degree_index'] + 1})"
-            if edge["to_advisor_id"]:
-                lines.append(f"{prefix}  - {label}: {edge['advisor_name_raw']}")
-                emit_node(edge["to_advisor_id"], indent + 4)
+            relation_kind = edge.get("relation_kind", "advisor")
+            relation_name = edge.get("relation_name_raw", "Unknown")
+            relation_slot = int(edge.get("relation_slot", 1))
+            target_id = edge.get("to_person_id")
+
+            if relation_kind == "student":
+                label = f"student {relation_slot}"
+                institution_raw = edge.get("institution_raw", "")
+                year_display = _format_year_value(edge.get("year", {"kind": "unknown"}))
+                suffix_parts: list[str] = []
+                if institution_raw:
+                    suffix_parts.append(f"school: {institution_raw}")
+                if year_display != "Unknown":
+                    suffix_parts.append(f"year: {year_display}")
+                suffix = f" ({'; '.join(suffix_parts)})" if suffix_parts else ""
             else:
-                lines.append(f"{prefix}  - {label}: {edge['advisor_name_raw']} (unresolvable)")
+                degree_index = edge.get("from_degree_index")
+                if degree_index is None:
+                    label = f"advisor {relation_slot}"
+                else:
+                    label = f"advisor {relation_slot} (degree {int(degree_index) + 1})"
+                suffix = ""
+
+            if target_id:
+                lines.append(f"{prefix}  - {label}: {relation_name}{suffix}")
+                emit_node(target_id, indent + 4)
+            else:
+                lines.append(f"{prefix}  - {label}: {relation_name}{suffix} (unresolvable)")
 
     emit_node(start_id, 0)
 

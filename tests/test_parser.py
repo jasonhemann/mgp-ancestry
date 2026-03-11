@@ -99,3 +99,16 @@ def test_no_null_year_values(load_fixture_html):
             year_value = degree["year"]
             assert isinstance(year_value, dict)
             assert "kind" in year_value
+
+
+def test_parse_75750_students_table(load_fixture_html):
+    person = parse_person_html(load_fixture_html("75750"), person_id="75750")
+    payload = person.to_dict()
+    students = payload["students"]
+
+    assert len(students) == 13
+    assert students[0]["id"] == "186363"
+    assert students[0]["name"] == "Byrd, William"
+    assert students[0]["school_raw"] == "Indiana University"
+    assert students[0]["year"]["kind"] == "year"
+    assert students[0]["year"]["value"] == 2009

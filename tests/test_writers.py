@@ -10,6 +10,7 @@ from genealogy_tree.models import (
     GraphResult,
     InstitutionRecord,
     PersonRecord,
+    StudentRef,
     year_raw,
     year_single,
 )
@@ -34,7 +35,11 @@ def test_json_writer_contract(tmp_path):
         "1": _person("1", "Root", ["2"]),
         "2": _person("2", "Advisor", []),
     }
-    graph = build_advisor_graph("1", lambda person_id: people[person_id], config=TraversalConfig(max_depth=5))
+    graph = build_advisor_graph(
+        "1",
+        lambda person_id: people[person_id],
+        config=TraversalConfig(max_depth=5, direction="advisor"),
+    )
     out_path = tmp_path / "lineage_1.json"
     write_graph_json(graph, out_path)
 
@@ -53,7 +58,11 @@ def test_markdown_render_revisit_reference():
         "2": _person("2", "Left", []),
         "3": _person("3", "Right", ["2"]),
     }
-    graph = build_advisor_graph("1", lambda person_id: people[person_id], config=TraversalConfig(max_depth=10))
+    graph = build_advisor_graph(
+        "1",
+        lambda person_id: people[person_id],
+        config=TraversalConfig(max_depth=10, direction="advisor"),
+    )
     text = render_markdown_lineage(graph)
     assert "# Advisor Lineage for Root (1)" in text
     assert "[see above](#node-2)" in text
@@ -82,18 +91,20 @@ def test_markdown_render_unknown_and_unresolvable_paths(tmp_path):
         nodes={"1": root},
         edges=[
             EdgeRecord(
+                relation_kind="advisor",
                 from_person_id="1",
-                to_advisor_id=None,
+                to_person_id=None,
+                relation_slot=1,
+                relation_name_raw="Unknown",
                 from_degree_index=0,
-                advisor_slot=1,
-                advisor_name_raw="Unknown",
             ),
             EdgeRecord(
+                relation_kind="advisor",
                 from_person_id="1",
-                to_advisor_id="999",
+                to_person_id="999",
+                relation_slot=2,
+                relation_name_raw="Missing",
                 from_degree_index=0,
-                advisor_slot=2,
-                advisor_name_raw="Missing",
             ),
         ],
         visit_order=["1"],
@@ -110,3 +121,66 @@ def test_markdown_render_unknown_and_unresolvable_paths(tmp_path):
     md_path = tmp_path / "lineage_1.md"
     write_markdown_lineage(graph, md_path)
     assert md_path.exists()
+
+
+def test_markdown_render_student_edges():
+    root = PersonRecord(
+        id="1",
+        name="Root",
+        url="https://example.test/1",
+        source_snapshot="",
+        parse_warnings=[],
+        degrees=[
+            DegreeRecord(
+                degree_type="Ph.D.",
+                institutions=[InstitutionRecord(name_raw="Alpha", countries_raw=["X"])],
+                year_value=year_single(2000),
+                year_text="2000",
+                dissertation="N/A",
+                advisors=[],
+            )
+        ],
+        students=[
+            StudentRef(
+                name="Student A",
+                id="2",
+                href_raw="id.php?id=2",
+                school_raw="Alpha University",
+                year_value=year_single(2015),
+                year_text="2015",
+                descendants_text="",
+            )
+        ],
+    )
+    student = PersonRecord(
+        id="2",
+        name="Student A",
+        url="https://example.test/2",
+        source_snapshot="",
+        parse_warnings=[],
+        degrees=[],
+        students=[],
+    )
+    graph = GraphResult(
+        start_id="1",
+        nodes={"1": root, "2": student},
+        edges=[
+            EdgeRecord(
+                relation_kind="student",
+                from_person_id="1",
+                to_person_id="2",
+                relation_slot=1,
+                relation_name_raw="Student A",
+                institution_raw="Alpha University",
+                year_value=year_single(2015),
+                year_text="2015",
+            )
+        ],
+        visit_order=["1", "2"],
+        stats={"visited_nodes": 2, "edge_count": 1, "advisor_edge_count": 0, "student_edge_count": 1, "revisited_skips": 0},
+        warnings=[],
+        config={"direction": "both"},
+    )
+    text = render_markdown_lineage(graph)
+    assert "# Bidirectional Lineage for Root (1)" in text
+    assert "student 1: Student A (school: Alpha University; year: 2015)" in text

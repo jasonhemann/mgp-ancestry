@@ -71,6 +71,7 @@ def test_cli_exhaustive_resolve_defaults():
     assert config.exhaustive is True
     assert config.max_depth is None
     assert config.max_nodes is None
+    assert config.direction == "advisor"
 
 
 def test_cli_resume_from_checkpoint(tmp_path: Path):
@@ -147,3 +148,55 @@ def test_cli_resume_from_checkpoint(tmp_path: Path):
     assert second_exit == 0
     payload = json.loads((out_dir / "lineage_1.json").read_text(encoding="utf-8"))
     assert set(payload["nodes"].keys()) == {"1", "2", "3"}
+
+
+def test_cli_bidirectional_traversal_from_snapshot(tmp_path: Path):
+    html_1 = """
+    <html><head><title>P1 - The Mathematics Genealogy Project</title></head><body>
+      <h2 style="text-align: center;">P1</h2>
+      <div style="line-height: 30px; text-align: center; margin-bottom: 1ex">
+        <span>Ph.D. <span style="color:#006633">U1</span> 2001</span><img alt="X" />
+      </div>
+      <div style="text-align: center"><span id="thesisTitle">T1</span></div>
+      <p style="text-align: center">Advisor: Unknown</p>
+      <p style="text-align: center">Students:</p>
+      <table style="margin-left: auto; margin-right: auto">
+        <tr><th>Name</th><th>School</th><th>Year</th><th>Descendants</th></tr>
+        <tr><td><a href="id.php?id=2">P2</a></td><td>U1</td><td>2015</td><td></td></tr>
+      </table>
+    </body></html>
+    """
+    html_2 = """
+    <html><head><title>P2 - The Mathematics Genealogy Project</title></head><body>
+      <h2 style="text-align: center;">P2</h2>
+      <div style="line-height: 30px; text-align: center; margin-bottom: 1ex">
+        <span>Ph.D. <span style="color:#006633">U2</span> 2015</span><img alt="X" />
+      </div>
+      <div style="text-align: center"><span id="thesisTitle">T2</span></div>
+      <p style="text-align: center">Advisor: Unknown</p>
+    </body></html>
+    """
+    snapshot_dir = tmp_path / "snapshots"
+    out_dir = tmp_path / "out"
+    _write_snapshot(snapshot_dir, "1", html_1)
+    _write_snapshot(snapshot_dir, "2", html_2)
+
+    exit_code = cli.main(
+        [
+            "build",
+            "1",
+            "--snapshot-dir",
+            str(snapshot_dir),
+            "--out-dir",
+            str(out_dir),
+            "--max-depth",
+            "1",
+            "--direction",
+            "both",
+        ]
+    )
+    assert exit_code == 0
+    payload = json.loads((out_dir / "lineage_1.json").read_text(encoding="utf-8"))
+    assert payload["config"]["direction"] == "both"
+    assert payload["stats"]["student_edge_count"] == 1
+    assert set(payload["nodes"].keys()) == {"1", "2"}
