@@ -2,15 +2,16 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+import json
 from pathlib import Path
 import sys
 from typing import cast
 
 from .lineage import TraversalConfig, build_advisor_graph, load_checkpoint
-from .models import PersonRecord
+from .models import GraphResult, PersonRecord
 from .parser import parse_person_html
 from .snapshot_store import SnapshotStore
-from .writers import write_graph_json, write_markdown_lineage
+from .writers import write_gephi_exports, write_graph_json, write_markdown_lineage
 
 DEFAULT_MAX_DEPTH = 20
 DEFAULT_MAX_NODES = 500
@@ -95,6 +96,14 @@ class BuildArgs:
     checkpoint_every_nodes: int
 
 
+@dataclass(slots=True)
+class ExportGephiArgs:
+    command: str
+    lineage_json: str
+    out_dir: str
+    prefix: str
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="genealogy-tree")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -115,6 +124,19 @@ def _build_parser() -> argparse.ArgumentParser:
     _ = build_parser.add_argument("--checkpoint-path", default="")
     _ = build_parser.add_argument("--resume", action="store_true")
     _ = build_parser.add_argument("--checkpoint-every-nodes", type=int, default=1)
+
+    gephi_parser = subparsers.add_parser("export-gephi", help="Export lineage JSON as Gephi CSV and GEXF")
+    _ = gephi_parser.add_argument("lineage_json", help="Path to lineage_*.json")
+    _ = gephi_parser.add_argument(
+        "--out-dir",
+        default="",
+        help="Output directory for Gephi files (defaults beside JSON)",
+    )
+    _ = gephi_parser.add_argument(
+        "--prefix",
+        default="",
+        help="Filename prefix (defaults to input JSON stem)",
+    )
     return parser
 
 
@@ -142,6 +164,15 @@ def _namespace_to_build_args(namespace: argparse.Namespace) -> BuildArgs:
         checkpoint_path=_coerce_str(getattr(namespace, "checkpoint_path", ""), ""),
         resume=_coerce_bool(getattr(namespace, "resume", False)),
         checkpoint_every_nodes=_coerce_int(getattr(namespace, "checkpoint_every_nodes", 1), 1),
+    )
+
+
+def _namespace_to_export_gephi_args(namespace: argparse.Namespace) -> ExportGephiArgs:
+    return ExportGephiArgs(
+        command=_coerce_str(getattr(namespace, "command", ""), ""),
+        lineage_json=_coerce_str(getattr(namespace, "lineage_json", ""), ""),
+        out_dir=_coerce_str(getattr(namespace, "out_dir", ""), ""),
+        prefix=_coerce_str(getattr(namespace, "prefix", ""), ""),
     )
 
 
@@ -209,14 +240,43 @@ def _run_build(args: BuildArgs) -> int:
     return 0
 
 
+def _run_export_gephi(args: argparse.Namespace) -> int:
+    lineage_path = Path(args.lineage_json)
+    if not lineage_path.exists():
+        raise SystemExit(f"Lineage JSON does not exist: {lineage_path}")
+
+    payload = json.loads(lineage_path.read_text(encoding="utf-8"))
+    graph = GraphResult.from_dict(payload)
+
+    prefix = args.prefix or lineage_path.stem
+    if args.out_dir:
+        out_dir = Path(args.out_dir)
+    else:
+        out_dir = lineage_path.parent / f"{prefix}_gephi"
+
+    result = write_gephi_exports(graph, out_dir, prefix=prefix)
+    print(f"Wrote Gephi nodes CSV: {result.nodes_csv_path}")
+    print(f"Wrote Gephi edges CSV: {result.edges_csv_path}")
+    print(f"Wrote Gephi GEXF: {result.gexf_path}")
+    print(
+        "Export summary: "
+        f"nodes={result.node_count}, "
+        f"edges={result.edge_count}, "
+        f"unresolved_edges={result.unresolved_edge_count}"
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     namespace = parser.parse_args(argv)
-    build_args = _namespace_to_build_args(namespace)
-    if build_args.command == "build":
-        return _run_build(build_args)
+    command = _coerce_str(getattr(namespace, "command", ""), "")
+    if command == "build":
+        return _run_build(_namespace_to_build_args(namespace))
+    if command == "export-gephi":
+        return _run_export_gephi(_namespace_to_export_gephi_args(namespace))
     parser.print_usage(sys.stderr)
-    print(f"{parser.prog}: error: Unknown command: {build_args.command}", file=sys.stderr)
+    print(f"{parser.prog}: error: Unknown command: {command}", file=sys.stderr)
     return 2
 
 

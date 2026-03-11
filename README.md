@@ -63,6 +63,28 @@ genealogy-tree build 75750 --checkpoint-path out/checkpoint_75750.json
 genealogy-tree build 75750 --resume --checkpoint-path out/checkpoint_75750.json
 ```
 
+## Export to Gephi
+
+Export an existing lineage JSON into Gephi-friendly formats:
+
+```sh
+genealogy-tree export-gephi out/lineage_75750.json
+```
+
+By default this writes to `out/lineage_75750_gephi/`:
+
+- `lineage_75750_nodes.csv`
+- `lineage_75750_edges.csv`
+- `lineage_75750.gexf`
+
+Use a custom output location/prefix:
+
+```sh
+genealogy-tree export-gephi out/lineage_75750.json \
+  --out-dir out/gephi_75750 \
+  --prefix lineage_75750
+```
+
 ## Quality checks
 
 ```sh

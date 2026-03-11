@@ -147,3 +147,77 @@ def test_cli_resume_from_checkpoint(tmp_path: Path):
     assert second_exit == 0
     payload = json.loads((out_dir / "lineage_1.json").read_text(encoding="utf-8"))
     assert set(payload["nodes"].keys()) == {"1", "2", "3"}
+
+
+def test_cli_export_gephi(tmp_path: Path):
+    lineage_path = tmp_path / "lineage_1.json"
+    lineage_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "1.0.0",
+                "generator_version": "1.0.0",
+                "start_id": "1",
+                "nodes": {
+                    "1": {
+                        "id": "1",
+                        "name": "Root",
+                        "url": "https://example.test/1",
+                        "degrees": [
+                            {
+                                "degree_type": "Ph.D.",
+                                "institutions": [
+                                    {
+                                        "name_raw": "Demo University",
+                                        "countries_raw": ["DemoLand"],
+                                        "country_raw_primary": "DemoLand",
+                                    }
+                                ],
+                                "year": {"kind": "year", "value": 2001},
+                                "year_text": "2001",
+                                "dissertation": "Demo",
+                                "advisors": [{"name": "Advisor", "id": "2", "href_raw": "id.php?id=2"}],
+                            }
+                        ],
+                        "students": [],
+                        "source_snapshot": "data/snapshots/1.html",
+                        "parse_warnings": [],
+                    },
+                    "2": {
+                        "id": "2",
+                        "name": "Advisor",
+                        "url": "https://example.test/2",
+                        "degrees": [],
+                        "students": [],
+                        "source_snapshot": "data/snapshots/2.html",
+                        "parse_warnings": [],
+                    },
+                },
+                "edges": [
+                    {
+                        "relation_kind": "advisor",
+                        "from_person_id": "1",
+                        "to_person_id": "2",
+                        "relation_slot": 1,
+                        "relation_name_raw": "Advisor",
+                        "from_degree_index": 0,
+                        "href_raw": "id.php?id=2",
+                        "institution_raw": "",
+                        "year": {"kind": "unknown"},
+                        "year_text": "",
+                    }
+                ],
+                "visit_order": ["1", "2"],
+                "stats": {"visited_nodes": 2, "edge_count": 1},
+                "warnings": [],
+                "config": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    out_dir = tmp_path / "gephi"
+    exit_code = cli.main(["export-gephi", str(lineage_path), "--out-dir", str(out_dir)])
+    assert exit_code == 0
+    assert (out_dir / "lineage_1_nodes.csv").exists()
+    assert (out_dir / "lineage_1_edges.csv").exists()
+    assert (out_dir / "lineage_1.gexf").exists()

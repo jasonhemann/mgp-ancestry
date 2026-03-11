@@ -391,3 +391,18 @@ class GraphResult:
             "warnings": list(self.warnings),
             "config": dict(self.config),
         }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "GraphResult":
+        return cls(
+            start_id=str(payload.get("start_id", "")),
+            nodes={
+                str(node_id): PersonRecord.from_dict(node_payload)
+                for node_id, node_payload in payload.get("nodes", {}).items()
+            },
+            edges=[EdgeRecord.from_dict(edge_payload) for edge_payload in payload.get("edges", [])],
+            visit_order=[str(node_id) for node_id in payload.get("visit_order", [])],
+            stats=dict(payload.get("stats", {})),
+            warnings=[str(warning) for warning in payload.get("warnings", [])],
+            config=dict(payload.get("config", {})),
+        )
