@@ -31,21 +31,21 @@ Use `--config` to override defaults.
 From repo root:
 
 ```sh
-make viz-graphviz INPUT=out/lineage_75750.json ID=75750
+make viz-graphviz INPUT=out/lineage_<id>.json ID=<id>
 ```
 
 From `viz/`:
 
 ```sh
-make graphviz-render INPUT=../out/lineage_75750.json ID=75750
-make graphviz-open ID=75750
+make graphviz-render INPUT=../out/lineage_<id>.json ID=<id>
+make graphviz-open ID=<id>
 ```
 
 Direct script:
 
 ```sh
 python3 viz/graphviz/renderer/render_graphviz.py \
-  --input out/lineage_75750.json \
-  --output-dir viz/graphviz/generated/75750 \
+  --input out/lineage_<id>.json \
+  --output-dir viz/graphviz/generated/<id> \
   --format all
 ```

@@ -13,14 +13,14 @@ This directory contains versioned visualization backends and settings for lineag
 From repo root:
 
 ```sh
-make viz-gephi-open
-make viz-graphviz INPUT=out/lineage_75750.json ID=75750
+make viz-gephi-open INPUT=out/lineage_<id>_gephi/lineage_<id>.gexf
+make viz-graphviz INPUT=out/lineage_<id>.json ID=<id>
 ```
 
 From `viz/` directly:
 
 ```sh
-make gephi-open
-make graphviz-render INPUT=../out/lineage_75750.json ID=75750
-make graphviz-open ID=75750
+make gephi-open INPUT=../out/lineage_<id>_gephi/lineage_<id>.gexf
+make graphviz-render INPUT=../out/lineage_<id>.json ID=<id>
+make graphviz-open ID=<id>
 ```

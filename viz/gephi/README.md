@@ -1,23 +1,20 @@
 # Gephi Backend
 
-This backend keeps a versioned Gephi project for interactive exploration.
-
-## Project file
-
-- `projects/lineage_75750_explore.gephi`
+This backend documents a generic Gephi workflow for interactive exploration.
+Project files are intentionally local/untracked.
 
 ## Open project
 
-From repo root:
+Generate Gephi export files first:
 
 ```sh
-make viz-gephi-open
+genealogy-tree export-gephi out/lineage_<id>.json
 ```
 
-From `viz/`:
+Then open Gephi with the generated GEXF:
 
 ```sh
-make gephi-open
+make viz-gephi-open INPUT=out/lineage_<id>_gephi/lineage_<id>.gexf
 ```
 
 ## Recommended Gephi settings
@@ -35,4 +32,4 @@ Gephi stores some global settings outside the repo:
 
 - `~/Library/Application Support/gephi/0.10`
 
-Project/workspace settings in `.gephi` remain versioned here.
+Project/workspace settings in `.gephi` are local unless you choose to track one explicitly.

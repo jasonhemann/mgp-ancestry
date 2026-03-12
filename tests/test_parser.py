@@ -70,25 +70,17 @@ def test_parse_advisor_line_ignores_footer_advisor_id_links():
     assert advisors == [{"name": "Real Advisor", "id": "12345", "href_raw": "id.php?id=12345"}]
 
 
-def test_parse_57670_multi_advisor(load_fixture_html):
-    person = parse_person_html(load_fixture_html("57670"), person_id="57670")
+def test_parse_129079_multi_degree_multi_advisor_unknown_advisor(load_fixture_html):
+    person = parse_person_html(load_fixture_html("129079"), person_id="129079")
     payload = person.to_dict()
 
-    assert payload["id"] == "57670"
-    assert payload["name"] == "Christian August Hausen"
-    assert len(payload["degrees"]) == 1
-    advisors = payload["degrees"][0]["advisors"]
-    assert [advisor["id"] for advisor in advisors] == ["72669", "128986"]
-
-
-def test_parse_128986_multiple_degrees(load_fixture_html):
-    person = parse_person_html(load_fixture_html("128986"), person_id="128986")
-    payload = person.to_dict()
-    assert payload["name"] == "Johann Andreas Planer"
-    assert len(payload["degrees"]) == 2
-    assert payload["degrees"][0]["year"]["kind"] == "years"
-    assert payload["degrees"][0]["year"]["values"] == [1686]
-    assert payload["degrees"][1]["dissertation"].startswith("Disputatio medica inauguralis")
+    assert payload["id"] == "129079"
+    assert payload["name"] == "Johannes Fridericus Weidlerus"
+    assert len(payload["degrees"]) == 4
+    assert [advisor["id"] for advisor in payload["degrees"][1]["advisors"]] == ["198623", "125886"]
+    unknown_advisor = payload["degrees"][3]["advisors"][0]
+    assert unknown_advisor["name"] == "Unknown"
+    assert unknown_advisor["id"] is None
 
 
 def test_parse_47025_multi_institution_multi_country(load_fixture_html):
@@ -103,15 +95,6 @@ def test_parse_47025_multi_institution_multi_country(load_fixture_html):
     assert [inst["country_raw_primary"] for inst in institutions] == ["Germany", "Germany", "Germany"]
 
 
-def test_parse_129079_unknown_advisor(load_fixture_html):
-    person = parse_person_html(load_fixture_html("129079"), person_id="129079")
-    payload = person.to_dict()
-    assert len(payload["degrees"]) == 4
-    unknown_advisor = payload["degrees"][3]["advisors"][0]
-    assert unknown_advisor["name"] == "Unknown"
-    assert unknown_advisor["id"] is None
-
-
 def test_parse_128938_multi_year_value(load_fixture_html):
     person = parse_person_html(load_fixture_html("128938"), person_id="128938")
     degree = person.to_dict()["degrees"][0]
@@ -121,7 +104,7 @@ def test_parse_128938_multi_year_value(load_fixture_html):
 
 
 def test_no_null_year_values(load_fixture_html):
-    for person_id in ("57670", "75750", "128986", "47025", "129079", "128938"):
+    for person_id in ("47025", "129079", "128938"):
         person = parse_person_html(load_fixture_html(person_id), person_id=person_id)
         payload = person.to_dict()
         for degree in payload["degrees"]:
@@ -131,7 +114,7 @@ def test_no_null_year_values(load_fixture_html):
 
 
 def test_fixture_parsing_excludes_footer_form_links(load_fixture_html):
-    person = parse_person_html(load_fixture_html("128986"), person_id="128986")
+    person = parse_person_html(load_fixture_html("129079"), person_id="129079")
     payload = person.to_dict()
     advisor_names = [
         advisor["name"]

@@ -4,7 +4,7 @@ from genealogy_tree.parser import parse_person_html
 
 
 def test_person_record_contract(load_fixture_html):
-    payload = parse_person_html(load_fixture_html("75750"), person_id="75750").to_dict()
+    payload = parse_person_html(load_fixture_html("129079"), person_id="129079").to_dict()
     assert set(payload.keys()) == {
         "id",
         "name",

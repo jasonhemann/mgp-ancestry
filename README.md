@@ -1,34 +1,32 @@
 # genealogy-tree
 
-## To activate env
+Build advisor-only ancestry DAGs from Mathematics Genealogy Project pages.
+
+This repository is a reusable CLI tool: start from any MGP ID and traverse upward through all listed advisors.
+
+## Setup
 
 ```sh
 uv sync --group dev
 source .venv/bin/activate
 ```
 
-## To deactivate
-
-```sh
-deactivate
-```
-
 ## Build advisor lineage
 
-Run the CLI with a starting MGP ID:
+Run the CLI with any starting MGP ID:
 
 ```sh
-genealogy-tree build 75750
+genealogy-tree build <start_id>
 ```
 
-Outputs:
+Outputs (runtime artifacts, intentionally not tracked in git):
 
 - Raw snapshots: `data/snapshots/<id>.html`
 - Snapshot metadata: `data/snapshots/<id>.meta.json`
 - Canonical graph JSON: `out/lineage_<start_id>.json`
 - Markdown advisor lineage: `out/lineage_<start_id>.md`
 
-`degree.year` in JSON is a structured value:
+`degree.year` in JSON is structured:
 
 - `{"kind":"unknown"}`
 - `{"kind":"years","values":[1973]}`
@@ -38,7 +36,7 @@ Outputs:
 Key options:
 
 ```sh
-genealogy-tree build 75750 \
+genealogy-tree build <start_id> \
   --max-depth 20 \
   --max-nodes 500 \
   --stop-id 2185 \
@@ -47,20 +45,17 @@ genealogy-tree build 75750 \
 
 Traversal direction is upward-only: person to all listed advisors.
 
-Use exhaustive mode when you intentionally want to traverse further:
+For deeper pulls:
 
 ```sh
-genealogy-tree build 75750 --exhaustive --max-nodes-hard 20000
+genealogy-tree build <start_id> --exhaustive --max-nodes-hard 20000
 ```
 
 Checkpoint/resume:
 
 ```sh
-# start run and persist progress
-genealogy-tree build 75750 --checkpoint-path out/checkpoint_75750.json
-
-# continue from saved progress
-genealogy-tree build 75750 --resume --checkpoint-path out/checkpoint_75750.json
+genealogy-tree build <start_id> --checkpoint-path out/checkpoint_<start_id>.json
+genealogy-tree build <start_id> --resume --checkpoint-path out/checkpoint_<start_id>.json
 ```
 
 Schema strictness policy (pre-alpha):
@@ -69,27 +64,48 @@ Schema strictness policy (pre-alpha):
 - Older outputs/checkpoints (for example with `{"kind":"year",...}` or legacy edge keys) may fail to load.
 - Remedy: regenerate lineage JSON/checkpoints with a fresh `genealogy-tree build ...` run.
 
+## Example Output
+
+Sample full-depth Graphviz output for start ID `281144`:
+
+- `docs/examples/lineage_281144.svg`
+- `docs/examples/lineage_281144.png`
+
+![Example lineage render](docs/examples/lineage_281144.png)
+
 ## Export to Gephi
 
 Export an existing lineage JSON into Gephi-friendly formats:
 
 ```sh
-genealogy-tree export-gephi out/lineage_75750.json
+genealogy-tree export-gephi out/lineage_<start_id>.json
 ```
 
-By default this writes to `out/lineage_75750_gephi/`:
+By default this writes to `out/lineage_<start_id>_gephi/`:
 
-- `lineage_75750_nodes.csv`
-- `lineage_75750_edges.csv`
-- `lineage_75750.gexf`
+- `lineage_<start_id>_nodes.csv`
+- `lineage_<start_id>_edges.csv`
+- `lineage_<start_id>.gexf`
 
 Use a custom output location/prefix:
 
 ```sh
-genealogy-tree export-gephi out/lineage_75750.json \
-  --out-dir out/gephi_75750 \
-  --prefix lineage_75750
+genealogy-tree export-gephi out/lineage_<start_id>.json \
+  --out-dir out/gephi_<start_id> \
+  --prefix lineage_<start_id>
 ```
+
+## Data Policy
+
+- Bulk snapshots and generated lineage outputs are not tracked in git.
+- Visualization outputs in `viz/*/generated/` are also untracked.
+- Parser fixtures in `tests/fixtures/mgp/` are intentionally minimal regression corpus files.
+
+## Attribution and Non-Affiliation
+
+- This project consumes publicly available MGP web pages for research tooling.
+- It is not affiliated with The Mathematics Genealogy Project.
+- Users should respect source-site policies and keep conservative crawl-delay settings.
 
 ## Quality checks
 
@@ -100,6 +116,7 @@ make check
 Or run tools individually:
 
 ```sh
+make repo-hygiene
 make sync
 make format
 make lint
