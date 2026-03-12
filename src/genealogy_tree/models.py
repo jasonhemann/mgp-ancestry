@@ -255,7 +255,9 @@ class DegreeRecord:
         for idx, advisor_raw in enumerate(advisors_raw_list):
             advisors.append(
                 AdvisorRef.from_dict(
-                    _require_mapping(advisor_raw, field_path=f"{field_path}.advisors[{idx}]"),
+                    _require_mapping(
+                        advisor_raw, field_path=f"{field_path}.advisors[{idx}]"
+                    ),
                     field_path=f"{field_path}.advisors[{idx}]",
                 )
             )
@@ -268,7 +270,9 @@ class DegreeRecord:
         return cls(
             degree_type=degree_type,
             institutions=institutions,
-            year_value=_coerce_year_value(payload.get("year"), field_path=f"{field_path}.year"),
+            year_value=_coerce_year_value(
+                payload.get("year"), field_path=f"{field_path}.year"
+            ),
             year_text=year_text,
             dissertation=dissertation,
             advisors=advisors,
@@ -322,7 +326,9 @@ class PersonRecord:
         for idx, degree_raw in enumerate(degrees_raw_list):
             degrees.append(
                 DegreeRecord.from_dict(
-                    _require_mapping(degree_raw, field_path=f"{field_path}.degrees[{idx}]"),
+                    _require_mapping(
+                        degree_raw, field_path=f"{field_path}.degrees[{idx}]"
+                    ),
                     field_path=f"{field_path}.degrees[{idx}]",
                 )
             )
@@ -382,7 +388,11 @@ class EdgeRecord:
         *,
         field_path: str = "edge",
     ) -> "EdgeRecord":
-        legacy_keys = [key for key in ("to_advisor_id", "advisor_slot", "advisor_name_raw") if key in payload]
+        legacy_keys = [
+            key
+            for key in ("to_advisor_id", "advisor_slot", "advisor_name_raw")
+            if key in payload
+        ]
         if legacy_keys:
             joined = ", ".join(sorted(legacy_keys))
             raise ValueError(
@@ -413,7 +423,9 @@ class EdgeRecord:
         if to_person_id_raw is not None and not isinstance(to_person_id_raw, str):
             raise ValueError(f"{field_path}.to_person_id must be a string or null")
         relation_slot_raw = payload.get("relation_slot")
-        if isinstance(relation_slot_raw, bool) or not isinstance(relation_slot_raw, int):
+        if isinstance(relation_slot_raw, bool) or not isinstance(
+            relation_slot_raw, int
+        ):
             raise ValueError(f"{field_path}.relation_slot must be an integer")
         if relation_slot_raw < 1:
             raise ValueError(f"{field_path}.relation_slot must be >= 1")
@@ -424,8 +436,12 @@ class EdgeRecord:
         from_degree_index_raw = payload.get("from_degree_index")
         if from_degree_index_raw is None:
             from_degree_index: int | None = None
-        elif isinstance(from_degree_index_raw, bool) or not isinstance(from_degree_index_raw, int):
-            raise ValueError(f"{field_path}.from_degree_index must be an integer or null")
+        elif isinstance(from_degree_index_raw, bool) or not isinstance(
+            from_degree_index_raw, int
+        ):
+            raise ValueError(
+                f"{field_path}.from_degree_index must be an integer or null"
+            )
         else:
             from_degree_index = from_degree_index_raw
 
@@ -448,7 +464,9 @@ class EdgeRecord:
             from_degree_index=from_degree_index,
             href_raw=href_raw,
             institution_raw=institution_raw,
-            year_value=_coerce_year_value(payload.get("year"), field_path=f"{field_path}.year"),
+            year_value=_coerce_year_value(
+                payload.get("year"), field_path=f"{field_path}.year"
+            ),
             year_text=year_text,
         )
 
@@ -512,7 +530,9 @@ class GraphResult:
         if not isinstance(nodes_raw, Mapping):
             raise ValueError("graph.nodes must be an object")
         nodes: dict[str, PersonRecord] = {}
-        for node_id_raw, node_payload in cast(Mapping[object, object], nodes_raw).items():
+        for node_id_raw, node_payload in cast(
+            Mapping[object, object], nodes_raw
+        ).items():
             node_id = str(node_id_raw)
             nodes[node_id] = PersonRecord.from_dict(
                 _require_mapping(node_payload, field_path=f"graph.nodes[{node_id!r}]"),
@@ -565,7 +585,10 @@ class GraphResult:
         config_raw = payload.get("config")
         if not isinstance(config_raw, Mapping):
             raise ValueError("graph.config must be an object")
-        config = {str(key): value for key, value in cast(Mapping[object, object], config_raw).items()}
+        config = {
+            str(key): value
+            for key, value in cast(Mapping[object, object], config_raw).items()
+        }
 
         return cls(
             start_id=start_id_value,

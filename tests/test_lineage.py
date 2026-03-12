@@ -3,14 +3,27 @@ from __future__ import annotations
 from pathlib import Path
 
 from genealogy_tree.lineage import TraversalConfig, build_advisor_graph, load_checkpoint
-from genealogy_tree.models import AdvisorRef, DegreeRecord, InstitutionRecord, PersonRecord, year_many
+from genealogy_tree.models import (
+    AdvisorRef,
+    DegreeRecord,
+    InstitutionRecord,
+    PersonRecord,
+    year_many,
+)
 
 
 def _person(person_id: str, name: str, advisor_ids: list[str]) -> PersonRecord:
-    advisors = [AdvisorRef(name=f"A{advisor_id}", id=advisor_id, href_raw=f"id.php?id={advisor_id}") for advisor_id in advisor_ids]
+    advisors = [
+        AdvisorRef(
+            name=f"A{advisor_id}", id=advisor_id, href_raw=f"id.php?id={advisor_id}"
+        )
+        for advisor_id in advisor_ids
+    ]
     degree = DegreeRecord(
         degree_type="Ph.D.",
-        institutions=[InstitutionRecord(name_raw="Test University", countries_raw=["Testland"])],
+        institutions=[
+            InstitutionRecord(name_raw="Test University", countries_raw=["Testland"])
+        ],
         year_value=year_many([2000]),
         year_text="2000",
         dissertation="Test",
@@ -39,7 +52,9 @@ def test_dfs_dag_dedup():
     def loader(person_id: str) -> PersonRecord:
         return people[person_id]
 
-    graph = build_advisor_graph("1", loader, config=TraversalConfig(max_depth=10, max_nodes=10))
+    graph = build_advisor_graph(
+        "1", loader, config=TraversalConfig(max_depth=10, max_nodes=10)
+    )
     payload = graph.to_dict()
 
     assert payload["visit_order"] == ["1", "2", "4", "3"]

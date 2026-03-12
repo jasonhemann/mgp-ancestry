@@ -13,20 +13,36 @@ from genealogy_tree.models import (
     year_many,
     year_raw,
 )
-from genealogy_tree.writers import render_markdown_lineage, write_graph_json, write_markdown_lineage
+from genealogy_tree.writers import (
+    render_markdown_lineage,
+    write_graph_json,
+    write_markdown_lineage,
+)
 
 
 def _person(person_id: str, name: str, advisor_ids: list[str]) -> PersonRecord:
-    advisors = [AdvisorRef(name=f"A{advisor_id}", id=advisor_id, href_raw=f"id.php?id={advisor_id}") for advisor_id in advisor_ids]
+    advisors = [
+        AdvisorRef(
+            name=f"A{advisor_id}", id=advisor_id, href_raw=f"id.php?id={advisor_id}"
+        )
+        for advisor_id in advisor_ids
+    ]
     degree = DegreeRecord(
         degree_type="Ph.D.",
-        institutions=[InstitutionRecord(name_raw="Test University", countries_raw=["Testland"])],
+        institutions=[
+            InstitutionRecord(name_raw="Test University", countries_raw=["Testland"])
+        ],
         year_value=year_many([2000]),
         year_text="2000",
         dissertation="Test",
         advisors=advisors,
     )
-    return PersonRecord(id=person_id, name=name, url=f"https://example.test/{person_id}", degrees=[degree])
+    return PersonRecord(
+        id=person_id,
+        name=name,
+        url=f"https://example.test/{person_id}",
+        degrees=[degree],
+    )
 
 
 def test_json_writer_contract(tmp_path):

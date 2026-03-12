@@ -11,7 +11,9 @@ def test_snapshot_store_caches_and_reuses(monkeypatch, tmp_path: Path):
 
     def fake_fetch(url: str, **kwargs):
         calls["count"] += 1
-        return FetchResult(text=f"<html>{calls['count']}</html>", status_code=200, url=url)
+        return FetchResult(
+            text=f"<html>{calls['count']}</html>", status_code=200, url=url
+        )
 
     monkeypatch.setattr("genealogy_tree.snapshot_store.fetch_with_retries", fake_fetch)
     store = SnapshotStore(tmp_path / "snapshots", crawl_delay_seconds=0.0)
@@ -26,4 +28,3 @@ def test_snapshot_store_caches_and_reuses(monkeypatch, tmp_path: Path):
     assert calls["count"] == 2
     assert first.meta_path.exists()
     assert first.html_path.exists()
-

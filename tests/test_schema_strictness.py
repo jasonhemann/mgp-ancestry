@@ -32,7 +32,9 @@ def _minimal_graph_payload() -> dict[str, object]:
                         "year": {"kind": "years", "values": [2001]},
                         "year_text": "2001",
                         "dissertation": "Demo",
-                        "advisors": [{"name": "Advisor", "id": "2", "href_raw": "id.php?id=2"}],
+                        "advisors": [
+                            {"name": "Advisor", "id": "2", "href_raw": "id.php?id=2"}
+                        ],
                     }
                 ],
                 "source_snapshot": "data/snapshots/1.html",
@@ -68,7 +70,9 @@ def _minimal_graph_payload() -> dict[str, object]:
     }
 
 
-def _checkpoint_payload_from_graph(graph_payload: dict[str, object]) -> dict[str, object]:
+def _checkpoint_payload_from_graph(
+    graph_payload: dict[str, object],
+) -> dict[str, object]:
     return {
         **graph_payload,
         "open_stack": [],

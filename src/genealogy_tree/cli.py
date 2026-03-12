@@ -108,11 +108,17 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="genealogy-tree")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    build_parser = subparsers.add_parser("build", help="Build advisor lineage graph from a start MGP ID")
-    _ = build_parser.add_argument("start_id", help="Math Genealogy Project ID to start from")
+    build_parser = subparsers.add_parser(
+        "build", help="Build advisor lineage graph from a start MGP ID"
+    )
+    _ = build_parser.add_argument(
+        "start_id", help="Math Genealogy Project ID to start from"
+    )
     _ = build_parser.add_argument("--max-depth", type=int, default=DEFAULT_MAX_DEPTH)
     _ = build_parser.add_argument("--max-nodes", type=int, default=DEFAULT_MAX_NODES)
-    _ = build_parser.add_argument("--max-nodes-hard", type=int, default=DEFAULT_MAX_NODES_HARD)
+    _ = build_parser.add_argument(
+        "--max-nodes-hard", type=int, default=DEFAULT_MAX_NODES_HARD
+    )
     _ = build_parser.add_argument("--stop-id", action="append", default=[])
     _ = build_parser.add_argument("--stop-name", action="append", default=[])
     _ = build_parser.add_argument("--exhaustive", action="store_true")
@@ -125,7 +131,9 @@ def _build_parser() -> argparse.ArgumentParser:
     _ = build_parser.add_argument("--resume", action="store_true")
     _ = build_parser.add_argument("--checkpoint-every-nodes", type=int, default=1)
 
-    gephi_parser = subparsers.add_parser("export-gephi", help="Export lineage JSON as Gephi CSV and GEXF")
+    gephi_parser = subparsers.add_parser(
+        "export-gephi", help="Export lineage JSON as Gephi CSV and GEXF"
+    )
     _ = gephi_parser.add_argument("lineage_json", help="Path to lineage_*.json")
     _ = gephi_parser.add_argument(
         "--out-dir",
@@ -144,8 +152,12 @@ def _namespace_to_build_args(namespace: argparse.Namespace) -> BuildArgs:
     return BuildArgs(
         command=_coerce_str(getattr(namespace, "command", ""), ""),
         start_id=_coerce_str(getattr(namespace, "start_id", ""), ""),
-        max_depth=_coerce_int(getattr(namespace, "max_depth", DEFAULT_MAX_DEPTH), DEFAULT_MAX_DEPTH),
-        max_nodes=_coerce_int(getattr(namespace, "max_nodes", DEFAULT_MAX_NODES), DEFAULT_MAX_NODES),
+        max_depth=_coerce_int(
+            getattr(namespace, "max_depth", DEFAULT_MAX_DEPTH), DEFAULT_MAX_DEPTH
+        ),
+        max_nodes=_coerce_int(
+            getattr(namespace, "max_nodes", DEFAULT_MAX_NODES), DEFAULT_MAX_NODES
+        ),
         max_nodes_hard=_coerce_int(
             getattr(namespace, "max_nodes_hard", DEFAULT_MAX_NODES_HARD),
             DEFAULT_MAX_NODES_HARD,
@@ -154,16 +166,25 @@ def _namespace_to_build_args(namespace: argparse.Namespace) -> BuildArgs:
         stop_name=_coerce_str_list(getattr(namespace, "stop_name", [])),
         exhaustive=_coerce_bool(getattr(namespace, "exhaustive", False)),
         refresh=_coerce_bool(getattr(namespace, "refresh", False)),
-        snapshot_dir=_coerce_str(getattr(namespace, "snapshot_dir", DEFAULT_SNAPSHOT_DIR), DEFAULT_SNAPSHOT_DIR),
-        out_dir=_coerce_str(getattr(namespace, "out_dir", DEFAULT_OUT_DIR), DEFAULT_OUT_DIR),
+        snapshot_dir=_coerce_str(
+            getattr(namespace, "snapshot_dir", DEFAULT_SNAPSHOT_DIR),
+            DEFAULT_SNAPSHOT_DIR,
+        ),
+        out_dir=_coerce_str(
+            getattr(namespace, "out_dir", DEFAULT_OUT_DIR), DEFAULT_OUT_DIR
+        ),
         crawl_delay_seconds=_coerce_float(
             getattr(namespace, "crawl_delay_seconds", 10.0),
             10.0,
         ),
-        timeout_seconds=_coerce_float(getattr(namespace, "timeout_seconds", 20.0), 20.0),
+        timeout_seconds=_coerce_float(
+            getattr(namespace, "timeout_seconds", 20.0), 20.0
+        ),
         checkpoint_path=_coerce_str(getattr(namespace, "checkpoint_path", ""), ""),
         resume=_coerce_bool(getattr(namespace, "resume", False)),
-        checkpoint_every_nodes=_coerce_int(getattr(namespace, "checkpoint_every_nodes", 1), 1),
+        checkpoint_every_nodes=_coerce_int(
+            getattr(namespace, "checkpoint_every_nodes", 1), 1
+        ),
     )
 
 
@@ -236,7 +257,9 @@ def _run_build(args: BuildArgs) -> int:
 
     print(f"Wrote JSON: {json_path}")
     print(f"Wrote Markdown: {md_path}")
-    print(f"Visited nodes: {graph.stats['visited_nodes']}, edges: {graph.stats['edge_count']}")
+    print(
+        f"Visited nodes: {graph.stats['visited_nodes']}, edges: {graph.stats['edge_count']}"
+    )
     return 0
 
 
@@ -248,17 +271,24 @@ def _run_export_gephi(args: ExportGephiArgs) -> int:
     raw_payload = cast(object, json.loads(lineage_path.read_text(encoding="utf-8")))
     if not isinstance(raw_payload, dict):
         raise SystemExit(f"Lineage JSON must be an object: {lineage_path}")
-    payload = {str(key): value for key, value in cast(dict[object, object], raw_payload).items()}
+    payload = {
+        str(key): value
+        for key, value in cast(dict[object, object], raw_payload).items()
+    }
     graph = GraphResult.from_dict(payload)
 
     prefix = args.prefix or lineage_path.stem
-    out_dir = Path(args.out_dir) if args.out_dir else lineage_path.parent / f"{prefix}_gephi"
+    out_dir = (
+        Path(args.out_dir) if args.out_dir else lineage_path.parent / f"{prefix}_gephi"
+    )
 
     result = write_gephi_exports(graph, out_dir, prefix=prefix)
     print(f"Wrote Gephi nodes CSV: {result.nodes_csv_path}")
     print(f"Wrote Gephi edges CSV: {result.edges_csv_path}")
     print(f"Wrote Gephi GEXF: {result.gexf_path}")
-    print(f"Export summary: nodes={result.node_count}, edges={result.edge_count}, unresolved_edges={result.unresolved_edge_count}")
+    print(
+        f"Export summary: nodes={result.node_count}, edges={result.edge_count}, unresolved_edges={result.unresolved_edge_count}"
+    )
     return 0
 
 

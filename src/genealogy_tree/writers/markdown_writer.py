@@ -54,9 +54,13 @@ def _format_year_value(value: Mapping[str, object]) -> str:
 
 
 def _format_degree_payload(degree: Mapping[str, object]) -> str:
-    institutions = [_as_mapping(item) for item in _as_object_list(degree.get("institutions"))]
+    institutions = [
+        _as_mapping(item) for item in _as_object_list(degree.get("institutions"))
+    ]
     institution_names = [
-        _coerce_str(item.get("name_raw"), "") for item in institutions if _coerce_str(item.get("name_raw"), "")
+        _coerce_str(item.get("name_raw"), "")
+        for item in institutions
+        if _coerce_str(item.get("name_raw"), "")
     ]
     institution_text = ", ".join(institution_names) or "Unknown institution"
     year_text = _format_year_value(_as_mapping(degree.get("year", {"kind": "unknown"})))
@@ -71,7 +75,8 @@ def render_markdown_lineage(graph: GraphResult) -> str:
 
     raw_nodes = _as_mapping(data.get("nodes", {}))
     nodes: dict[str, Mapping[str, object]] = {
-        _coerce_str(node_id): _as_mapping(node_payload) for node_id, node_payload in raw_nodes.items()
+        _coerce_str(node_id): _as_mapping(node_payload)
+        for node_id, node_payload in raw_nodes.items()
     }
     edges = [_as_mapping(edge) for edge in _as_object_list(data.get("edges", []))]
     stats = _as_mapping(data.get("stats", {}))
@@ -116,14 +121,20 @@ def render_markdown_lineage(graph: GraphResult) -> str:
 
         rendered.add(person_id)
         node_url = _coerce_str(node.get("url"), "")
-        lines.append(f"{prefix}- <a id=\"{anchor}\"></a>{node_name} ({person_id}) - [MGP]({node_url})")
+        lines.append(
+            f'{prefix}- <a id="{anchor}"></a>{node_name} ({person_id}) - [MGP]({node_url})'
+        )
         source_snapshot = _coerce_str(node.get("source_snapshot"), "")
         if source_snapshot:
             lines.append(f"{prefix}  - snapshot: `{source_snapshot}`")
 
-        degree_payloads = [_as_mapping(item) for item in _as_object_list(node.get("degrees", []))]
+        degree_payloads = [
+            _as_mapping(item) for item in _as_object_list(node.get("degrees", []))
+        ]
         for idx, degree_payload in enumerate(degree_payloads, start=1):
-            lines.append(f"{prefix}  - degree {idx}: {_format_degree_payload(degree_payload)}")
+            lines.append(
+                f"{prefix}  - degree {idx}: {_format_degree_payload(degree_payload)}"
+            )
 
         for edge in adjacency.get(person_id, []):
             relation_kind = _coerce_str(edge.get("relation_kind"), "advisor")
@@ -135,7 +146,9 @@ def render_markdown_lineage(graph: GraphResult) -> str:
             if relation_kind == "student":
                 label = f"student {relation_slot}"
                 institution_raw = _coerce_str(edge.get("institution_raw"), "")
-                year_display = _format_year_value(_as_mapping(edge.get("year", {"kind": "unknown"})))
+                year_display = _format_year_value(
+                    _as_mapping(edge.get("year", {"kind": "unknown"}))
+                )
                 suffix_parts: list[str] = []
                 if institution_raw:
                     suffix_parts.append(f"school: {institution_raw}")
@@ -155,7 +168,9 @@ def render_markdown_lineage(graph: GraphResult) -> str:
                 lines.append(f"{prefix}  - {label}: {relation_name}{suffix}")
                 emit_node(target_id, indent + 4)
             else:
-                lines.append(f"{prefix}  - {label}: {relation_name}{suffix} (unresolvable)")
+                lines.append(
+                    f"{prefix}  - {label}: {relation_name}{suffix} (unresolvable)"
+                )
 
     emit_node(start_id, 0)
 

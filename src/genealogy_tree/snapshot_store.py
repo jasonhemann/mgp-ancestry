@@ -67,7 +67,9 @@ class SnapshotStore:
             for key, value in cast(dict[object, object], raw_meta_obj).items():
                 meta[str(key)] = value
         url_value = meta.get("url")
-        url = str(url_value) if url_value is not None else f"{BASE_MGP_ID_URL}{person_id}"
+        url = (
+            str(url_value) if url_value is not None else f"{BASE_MGP_ID_URL}{person_id}"
+        )
         return SnapshotRecord(
             id=str(person_id),
             url=url,
@@ -115,7 +117,9 @@ class SnapshotStore:
             "content_length": len(fetch_result.text),
             "parser_version": self.parser_version,
         }
-        _ = meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+        _ = meta_path.write_text(
+            json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
         return SnapshotRecord(
             id=str(person_id),
             url=fetch_result.url,

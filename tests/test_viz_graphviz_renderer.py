@@ -91,7 +91,9 @@ def test_collapse_edges_and_dot_contract():
     resolved = renderer.normalize_resolved_edges(payload)
     collapsed = renderer.collapse_edges(resolved, collapse_parallel=True)
     depths = renderer.compute_depths(payload["start_id"], collapsed)
-    dot_text = renderer.build_dot(payload, collapsed, depths, config={}, max_label_chars=40, include_year=True)
+    dot_text = renderer.build_dot(
+        payload, collapsed, depths, config={}, max_label_chars=40, include_year=True
+    )
 
     assert len(resolved) == 3
     assert len(collapsed) == 2

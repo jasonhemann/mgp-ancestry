@@ -111,7 +111,10 @@ def _collect_node_values(graph: GraphResult) -> list[dict[str, str | int]]:
             if maybe_year is not None:
                 year_candidates.append(maybe_year)
             for institution in degree.institutions:
-                if institution.name_raw and institution.name_raw not in seen_institutions:
+                if (
+                    institution.name_raw
+                    and institution.name_raw not in seen_institutions
+                ):
                     seen_institutions.add(institution.name_raw)
                     institutions.append(institution.name_raw)
                 for country in institution.countries_raw:
@@ -158,7 +161,9 @@ def _collect_edge_values(graph: GraphResult) -> tuple[list[dict[str, str | int]]
                 "label": f"{edge.relation_kind}_{edge.relation_slot}",
                 "relation_kind": edge.relation_kind,
                 "relation_slot": edge.relation_slot,
-                "from_degree_index": edge.from_degree_index if edge.from_degree_index is not None else "",
+                "from_degree_index": edge.from_degree_index
+                if edge.from_degree_index is not None
+                else "",
                 "relation_name_raw": edge.relation_name_raw,
                 "href_raw": edge.href_raw,
                 "year_kind": edge.year_value.get("kind", "unknown"),
@@ -170,7 +175,9 @@ def _collect_edge_values(graph: GraphResult) -> tuple[list[dict[str, str | int]]
     return rows, unresolved_count
 
 
-def _write_csv(output_path: Path, rows: list[dict[str, str | int]], fieldnames: list[str]) -> None:
+def _write_csv(
+    output_path: Path, rows: list[dict[str, str | int]], fieldnames: list[str]
+) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
@@ -179,11 +186,17 @@ def _write_csv(output_path: Path, rows: list[dict[str, str | int]], fieldnames: 
             writer.writerow(row)
 
 
-def _write_gexf(output_path: Path, node_rows: list[dict[str, str | int]], edge_rows: list[dict[str, str | int]]) -> None:
+def _write_gexf(
+    output_path: Path,
+    node_rows: list[dict[str, str | int]],
+    edge_rows: list[dict[str, str | int]],
+) -> None:
     ET.register_namespace("", GEXF_NS)
 
     gexf = ET.Element(f"{{{GEXF_NS}}}gexf", {"version": "1.2"})
-    meta = ET.SubElement(gexf, f"{{{GEXF_NS}}}meta", {"lastmodifieddate": date.today().isoformat()})
+    meta = ET.SubElement(
+        gexf, f"{{{GEXF_NS}}}meta", {"lastmodifieddate": date.today().isoformat()}
+    )
     creator = ET.SubElement(meta, f"{{{GEXF_NS}}}creator")
     creator.text = "genealogy-tree"
     description = ET.SubElement(meta, f"{{{GEXF_NS}}}description")
@@ -223,7 +236,9 @@ def _write_gexf(output_path: Path, node_rows: list[dict[str, str | int]], edge_r
         ("institution_raw", "institution_raw", "string"),
     ]
 
-    node_attrs_el = ET.SubElement(graph_el, f"{{{GEXF_NS}}}attributes", {"class": "node"})
+    node_attrs_el = ET.SubElement(
+        graph_el, f"{{{GEXF_NS}}}attributes", {"class": "node"}
+    )
     for attr_id, title, attr_type in node_attr_fields:
         _ = ET.SubElement(
             node_attrs_el,
@@ -231,7 +246,9 @@ def _write_gexf(output_path: Path, node_rows: list[dict[str, str | int]], edge_r
             {"id": attr_id, "title": title, "type": attr_type},
         )
 
-    edge_attrs_el = ET.SubElement(graph_el, f"{{{GEXF_NS}}}attributes", {"class": "edge"})
+    edge_attrs_el = ET.SubElement(
+        graph_el, f"{{{GEXF_NS}}}attributes", {"class": "edge"}
+    )
     for attr_id, title, attr_type in edge_attr_fields:
         _ = ET.SubElement(
             edge_attrs_el,
@@ -243,7 +260,9 @@ def _write_gexf(output_path: Path, node_rows: list[dict[str, str | int]], edge_r
     for row in node_rows:
         node_id = str(row["id"])
         label = str(row["label"])
-        node_el = ET.SubElement(nodes_el, f"{{{GEXF_NS}}}node", {"id": node_id, "label": label})
+        node_el = ET.SubElement(
+            nodes_el, f"{{{GEXF_NS}}}node", {"id": node_id, "label": label}
+        )
         attvalues = ET.SubElement(node_el, f"{{{GEXF_NS}}}attvalues")
         for attr_id, _, _ in node_attr_fields:
             value = row.get(attr_id, "")

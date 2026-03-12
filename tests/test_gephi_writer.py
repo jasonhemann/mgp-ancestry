@@ -27,7 +27,11 @@ def _person(person_id: str, name: str, year: int) -> PersonRecord:
         degrees=[
             DegreeRecord(
                 degree_type="Ph.D.",
-                institutions=[InstitutionRecord(name_raw="Demo University", countries_raw=["DemoLand"])],
+                institutions=[
+                    InstitutionRecord(
+                        name_raw="Demo University", countries_raw=["DemoLand"]
+                    )
+                ],
                 year_value=year_many([year]),
                 year_text=str(year),
                 dissertation="Demo thesis",

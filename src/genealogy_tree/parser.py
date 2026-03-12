@@ -104,7 +104,9 @@ def _parse_institutions(
     if not parts:
         return []
 
-    institutions: list[InstitutionRecord] = [InstitutionRecord(name_raw=part, countries_raw=[]) for part in parts]
+    institutions: list[InstitutionRecord] = [
+        InstitutionRecord(name_raw=part, countries_raw=[]) for part in parts
+    ]
     if not countries_raw:
         return institutions
 
@@ -168,14 +170,20 @@ def _parse_degree_siblings(degree_div: Tag) -> tuple[str, list[AdvisorRef]]:
                 if not id_match:
                     continue
                 name = link.get_text(" ", strip=True)
-                matched_links.append(AdvisorRef(name=name or "Unknown", id=id_match.group(1), href_raw=href_raw))
+                matched_links.append(
+                    AdvisorRef(
+                        name=name or "Unknown", id=id_match.group(1), href_raw=href_raw
+                    )
+                )
 
             if matched_links:
                 advisors.extend(matched_links)
             elif "unknown" in lower_text:
                 advisors.append(AdvisorRef(name="Unknown", id=None, href_raw=""))
             else:
-                fallback = ADVISOR_LINE_REGEX.sub("", text, count=1).strip() or "Unknown"
+                fallback = (
+                    ADVISOR_LINE_REGEX.sub("", text, count=1).strip() or "Unknown"
+                )
                 advisors.append(AdvisorRef(name=fallback, id=None, href_raw=""))
 
     return dissertation, advisors
@@ -192,15 +200,28 @@ def parse_person_html(
     parse_warnings: list[str] = []
     name = extract_name(soup)
 
-    degree_divs = soup.find_all("div", style=lambda s: isinstance(s, str) and "line-height: 30px" in s and "text-align: center" in s)
+    degree_divs = soup.find_all(
+        "div",
+        style=lambda s: (
+            isinstance(s, str)
+            and "line-height: 30px" in s
+            and "text-align: center" in s
+        ),
+    )
 
     degrees: list[DegreeRecord] = []
     for degree_div in degree_divs:
         raw_text = degree_div.get_text(" ", strip=True)
         flag_tags = degree_div.find_all("img", alt=True)
-        countries = [str(tag.attrs.get("alt", "")).strip() for tag in flag_tags if str(tag.attrs.get("alt", "")).strip()]
+        countries = [
+            str(tag.attrs.get("alt", "")).strip()
+            for tag in flag_tags
+            if str(tag.attrs.get("alt", "")).strip()
+        ]
 
-        uni_span = degree_div.find("span", style=re.compile(r"color\s*:\s*#006633", re.I))
+        uni_span = degree_div.find(
+            "span", style=re.compile(r"color\s*:\s*#006633", re.I)
+        )
         universities_text = uni_span.get_text(" ", strip=True) if uni_span else ""
 
         institutions = _parse_institutions(universities_text, countries, parse_warnings)

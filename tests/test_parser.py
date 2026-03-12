@@ -38,7 +38,10 @@ def test_parse_country_institution_mismatch_warning():
     person = parse_person_html(html, person_id="x")
     payload = person.to_dict()
     assert payload["degrees"][0]["advisors"][0]["id"] is None
-    assert any("Country/institution count mismatch" in warning for warning in payload["parse_warnings"])
+    assert any(
+        "Country/institution count mismatch" in warning
+        for warning in payload["parse_warnings"]
+    )
 
 
 def test_parse_advisor_line_ignores_footer_advisor_id_links():
@@ -67,7 +70,9 @@ def test_parse_advisor_line_ignores_footer_advisor_id_links():
     person = parse_person_html(html, person_id="x")
     payload = person.to_dict()
     advisors = payload["degrees"][0]["advisors"]
-    assert advisors == [{"name": "Real Advisor", "id": "12345", "href_raw": "id.php?id=12345"}]
+    assert advisors == [
+        {"name": "Real Advisor", "id": "12345", "href_raw": "id.php?id=12345"}
+    ]
 
 
 def test_parse_129079_multi_degree_multi_advisor_unknown_advisor(load_fixture_html):
@@ -77,7 +82,10 @@ def test_parse_129079_multi_degree_multi_advisor_unknown_advisor(load_fixture_ht
     assert payload["id"] == "129079"
     assert payload["name"] == "Johannes Fridericus Weidlerus"
     assert len(payload["degrees"]) == 4
-    assert [advisor["id"] for advisor in payload["degrees"][1]["advisors"]] == ["198623", "125886"]
+    assert [advisor["id"] for advisor in payload["degrees"][1]["advisors"]] == [
+        "198623",
+        "125886",
+    ]
     unknown_advisor = payload["degrees"][3]["advisors"][0]
     assert unknown_advisor["name"] == "Unknown"
     assert unknown_advisor["id"] is None
@@ -92,7 +100,11 @@ def test_parse_47025_multi_institution_multi_country(load_fixture_html):
     assert institutions[0]["name_raw"] == "Georg-August-Universität Göttingen"
     assert institutions[1]["name_raw"] == "Justus-Liebig-Universität Gießen"
     assert institutions[2]["name_raw"] == "Universität Erfurt"
-    assert [inst["country_raw_primary"] for inst in institutions] == ["Germany", "Germany", "Germany"]
+    assert [inst["country_raw_primary"] for inst in institutions] == [
+        "Germany",
+        "Germany",
+        "Germany",
+    ]
 
 
 def test_parse_128938_multi_year_value(load_fixture_html):

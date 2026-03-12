@@ -133,7 +133,10 @@ def _serialize_open_stack(stack: list[StackItem]) -> list[dict[str, object]]:
 
 
 def _deserialize_open_stack(payload: list[dict[str, object]]) -> list[StackItem]:
-    return [(_coerce_str(item.get("id"), ""), _coerce_int(item.get("depth"), 0)) for item in payload]
+    return [
+        (_coerce_str(item.get("id"), ""), _coerce_int(item.get("depth"), 0))
+        for item in payload
+    ]
 
 
 def _write_checkpoint(
@@ -188,7 +191,8 @@ def _initialize_state(
 ]:
     if resume_state:
         open_stack_payload = [
-            _as_object_dict(item) for item in _as_object_list(resume_state.get("open_stack", []))
+            _as_object_dict(item)
+            for item in _as_object_list(resume_state.get("open_stack", []))
         ]
         stack = _deserialize_open_stack(open_stack_payload)
         if not stack:
@@ -199,19 +203,29 @@ def _initialize_state(
         }
 
         nodes: dict[str, PersonRecord] = {}
-        for node_id, node_payload in _as_object_dict(resume_state.get("nodes", {})).items():
-            nodes[_coerce_str(node_id)] = PersonRecord.from_dict(_as_mapping(node_payload))
+        for node_id, node_payload in _as_object_dict(
+            resume_state.get("nodes", {})
+        ).items():
+            nodes[_coerce_str(node_id)] = PersonRecord.from_dict(
+                _as_mapping(node_payload)
+            )
 
         edges = [
             EdgeRecord.from_dict(_as_mapping(item))
             for item in _as_object_list(resume_state.get("edges", []))
         ]
-        visit_order = [_coerce_str(v) for v in _as_object_list(resume_state.get("visit_order", []))]
-        warnings = [_coerce_str(v) for v in _as_object_list(resume_state.get("warnings", []))]
+        visit_order = [
+            _coerce_str(v) for v in _as_object_list(resume_state.get("visit_order", []))
+        ]
+        warnings = [
+            _coerce_str(v) for v in _as_object_list(resume_state.get("warnings", []))
+        ]
 
         stats: StatsDict = dict(default_stats)
         for key, raw_value in _as_object_dict(resume_state.get("stats", {})).items():
-            stats[_coerce_str(key)] = _coerce_int(raw_value, stats.get(_coerce_str(key), 0))
+            stats[_coerce_str(key)] = _coerce_int(
+                raw_value, stats.get(_coerce_str(key), 0)
+            )
 
         if _coerce_str(resume_state.get("start_id"), start_id_str) != start_id_str:
             warnings.append(
@@ -245,17 +259,29 @@ def _preload_status(
 
     if len(visited) >= traversal_config.max_nodes_hard:
         stack.append((person_id, depth))
-        warnings.append(f"Traversal stopped: reached max_nodes_hard={traversal_config.max_nodes_hard}.")
+        warnings.append(
+            f"Traversal stopped: reached max_nodes_hard={traversal_config.max_nodes_hard}."
+        )
         stats["hard_cap_hits"] += 1
         return "stop"
 
-    if not exhaustive and traversal_config.max_nodes is not None and len(visited) >= traversal_config.max_nodes:
+    if (
+        not exhaustive
+        and traversal_config.max_nodes is not None
+        and len(visited) >= traversal_config.max_nodes
+    ):
         stack.append((person_id, depth))
-        warnings.append(f"Traversal stopped: reached max_nodes={traversal_config.max_nodes}.")
+        warnings.append(
+            f"Traversal stopped: reached max_nodes={traversal_config.max_nodes}."
+        )
         stats["max_nodes_hits"] += 1
         return "stop"
 
-    if not exhaustive and traversal_config.max_depth is not None and depth > traversal_config.max_depth:
+    if (
+        not exhaustive
+        and traversal_config.max_depth is not None
+        and depth > traversal_config.max_depth
+    ):
         stats["depth_limit_hits"] += 1
         return "skip"
 
@@ -389,7 +415,11 @@ def build_advisor_graph(
             stats["stoplist_hits"] += 1
             continue
 
-        if not exhaustive and traversal_config.max_depth is not None and depth >= traversal_config.max_depth:
+        if (
+            not exhaustive
+            and traversal_config.max_depth is not None
+            and depth >= traversal_config.max_depth
+        ):
             stats["depth_limit_hits"] += 1
             continue
 

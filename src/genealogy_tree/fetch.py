@@ -59,7 +59,9 @@ def _compute_backoff_seconds(
         exponent = 0
     retry_multiplier = 1 << exponent
     unclamped_delay = base_delay_seconds * float(retry_multiplier)
-    raw_delay = unclamped_delay if unclamped_delay < max_delay_seconds else max_delay_seconds
+    raw_delay = (
+        unclamped_delay if unclamped_delay < max_delay_seconds else max_delay_seconds
+    )
     jitter = raw_delay * jitter_fraction * random.random()
     return raw_delay + jitter
 
@@ -85,11 +87,17 @@ def fetch_with_retries(
             response: ResponseLike = requests_session.get(url, timeout=timeout_seconds)
             text = response.text
             if _is_retryable_status(response.status_code):
-                raise RetryableFetchError(f"Retryable status code {response.status_code} for {url}")
+                raise RetryableFetchError(
+                    f"Retryable status code {response.status_code} for {url}"
+                )
             if MGP_RETRY_BODY_MARKER in text.casefold():
-                raise RetryableFetchError("MGP returned MDB2 transient connection error body marker")
+                raise RetryableFetchError(
+                    "MGP returned MDB2 transient connection error body marker"
+                )
             response.raise_for_status()
-            return FetchResult(text=text, status_code=response.status_code, url=response.url)
+            return FetchResult(
+                text=text, status_code=response.status_code, url=response.url
+            )
         except (requests.RequestException, RetryableFetchError) as exc:
             last_error = exc
             if attempt == max_attempts:
@@ -102,4 +110,6 @@ def fetch_with_retries(
                 )
             )
 
-    raise RuntimeError(f"Failed to fetch {url} after {max_attempts} attempts: {last_error}") from last_error
+    raise RuntimeError(
+        f"Failed to fetch {url} after {max_attempts} attempts: {last_error}"
+    ) from last_error

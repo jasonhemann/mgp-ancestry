@@ -175,7 +175,13 @@ def test_cli_export_gephi(tmp_path: Path):
                                 "year": {"kind": "years", "values": [2001]},
                                 "year_text": "2001",
                                 "dissertation": "Demo",
-                                "advisors": [{"name": "Advisor", "id": "2", "href_raw": "id.php?id=2"}],
+                                "advisors": [
+                                    {
+                                        "name": "Advisor",
+                                        "id": "2",
+                                        "href_raw": "id.php?id=2",
+                                    }
+                                ],
                             }
                         ],
                         "source_snapshot": "data/snapshots/1.html",
