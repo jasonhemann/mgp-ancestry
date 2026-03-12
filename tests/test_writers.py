@@ -10,8 +10,8 @@ from genealogy_tree.models import (
     GraphResult,
     InstitutionRecord,
     PersonRecord,
+    year_many,
     year_raw,
-    year_single,
 )
 from genealogy_tree.writers import render_markdown_lineage, write_graph_json, write_markdown_lineage
 
@@ -21,7 +21,7 @@ def _person(person_id: str, name: str, advisor_ids: list[str]) -> PersonRecord:
     degree = DegreeRecord(
         degree_type="Ph.D.",
         institutions=[InstitutionRecord(name_raw="Test University", countries_raw=["Testland"])],
-        year_value=year_single(2000),
+        year_value=year_many([2000]),
         year_text="2000",
         dissertation="Test",
         advisors=advisors,

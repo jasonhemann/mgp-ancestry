@@ -34,7 +34,7 @@ def _lineage_fixture() -> dict:
                 "url": "https://example.test/1",
                 "degrees": [
                     {
-                        "year": {"kind": "year", "value": 2000},
+                        "year": {"kind": "years", "values": [2000]},
                     }
                 ],
             },
@@ -44,7 +44,7 @@ def _lineage_fixture() -> dict:
                 "url": "https://example.test/2",
                 "degrees": [
                     {
-                        "year": {"kind": "year", "value": 1970},
+                        "year": {"kind": "years", "values": [1970]},
                     }
                 ],
             },
@@ -102,7 +102,7 @@ def test_collapse_edges_and_dot_contract():
     assert dot_text.count('"1" -> "2"') == 1
     assert 'label="x2"' in dot_text
     assert 'label="Root Person (2000)"' in dot_text
-    assert '\\\\n(2000)' not in dot_text
+    assert "\\\\n(2000)" not in dot_text
     assert "subgraph rank_depth_" not in dot_text
 
 

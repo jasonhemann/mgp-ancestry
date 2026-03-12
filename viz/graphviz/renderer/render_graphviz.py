@@ -53,13 +53,6 @@ def config_get(config: dict[str, Any], section: str, key: str, default: Any) -> 
 
 def parse_year_from_payload(year_payload: dict[str, Any]) -> int | None:
     kind = str(year_payload.get("kind", "unknown"))
-    if kind == "year":
-        value = year_payload.get("value")
-        if isinstance(value, int):
-            return value
-        if isinstance(value, str) and value.isdigit() and len(value) == 4:
-            return int(value)
-        return None
     if kind == "years":
         values = [int(v) for v in year_payload.get("values", []) if str(v).isdigit()]
         return min(values) if values else None

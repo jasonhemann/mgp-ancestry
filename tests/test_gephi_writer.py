@@ -11,7 +11,7 @@ from genealogy_tree.models import (
     GraphResult,
     InstitutionRecord,
     PersonRecord,
-    year_single,
+    year_many,
     year_unknown,
 )
 from genealogy_tree.writers import write_gephi_exports
@@ -28,7 +28,7 @@ def _person(person_id: str, name: str, year: int) -> PersonRecord:
             DegreeRecord(
                 degree_type="Ph.D.",
                 institutions=[InstitutionRecord(name_raw="Demo University", countries_raw=["DemoLand"])],
-                year_value=year_single(year),
+                year_value=year_many([year]),
                 year_text=str(year),
                 dissertation="Demo thesis",
                 advisors=[AdvisorRef(name="Unknown", id=None, href_raw="")],

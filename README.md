@@ -31,7 +31,7 @@ Outputs:
 `degree.year` in JSON is a structured value:
 
 - `{"kind":"unknown"}`
-- `{"kind":"year","value":1973}`
+- `{"kind":"years","values":[1973]}`
 - `{"kind":"years","values":[1684,1686]}`
 - `{"kind":"raw","text":"ca. 1700"}`
 
@@ -62,6 +62,12 @@ genealogy-tree build 75750 --checkpoint-path out/checkpoint_75750.json
 # continue from saved progress
 genealogy-tree build 75750 --resume --checkpoint-path out/checkpoint_75750.json
 ```
+
+Schema strictness policy (pre-alpha):
+
+- Artifact loading is strict; deprecated shapes are rejected.
+- Older outputs/checkpoints (for example with `{"kind":"year",...}` or legacy edge keys) may fail to load.
+- Remedy: regenerate lineage JSON/checkpoints with a fresh `genealogy-tree build ...` run.
 
 ## Export to Gephi
 

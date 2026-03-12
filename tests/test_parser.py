@@ -86,8 +86,8 @@ def test_parse_128986_multiple_degrees(load_fixture_html):
     payload = person.to_dict()
     assert payload["name"] == "Johann Andreas Planer"
     assert len(payload["degrees"]) == 2
-    assert payload["degrees"][0]["year"]["kind"] == "year"
-    assert payload["degrees"][0]["year"]["value"] == 1686
+    assert payload["degrees"][0]["year"]["kind"] == "years"
+    assert payload["degrees"][0]["year"]["values"] == [1686]
     assert payload["degrees"][1]["dissertation"].startswith("Disputatio medica inauguralis")
 
 
@@ -128,19 +128,6 @@ def test_no_null_year_values(load_fixture_html):
             year_value = degree["year"]
             assert isinstance(year_value, dict)
             assert "kind" in year_value
-
-
-def test_parse_75750_students_table(load_fixture_html):
-    person = parse_person_html(load_fixture_html("75750"), person_id="75750")
-    payload = person.to_dict()
-    students = payload["students"]
-
-    assert len(students) == 13
-    assert students[0]["id"] == "186363"
-    assert students[0]["name"] == "Byrd, William"
-    assert students[0]["school_raw"] == "Indiana University"
-    assert students[0]["year"]["kind"] == "year"
-    assert students[0]["year"]["value"] == 2009
 
 
 def test_fixture_parsing_excludes_footer_form_links(load_fixture_html):

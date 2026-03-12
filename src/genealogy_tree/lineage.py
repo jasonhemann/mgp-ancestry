@@ -91,7 +91,41 @@ class TraversalConfig:
 def load_checkpoint(checkpoint_path: str | Path) -> dict[str, object]:
     path = Path(checkpoint_path)
     payload_obj = cast(object, json.loads(path.read_text(encoding="utf-8")))
-    return _as_object_dict(payload_obj)
+    payload = _as_object_dict(payload_obj)
+    required_keys = (
+        "schema_version",
+        "generator_version",
+        "start_id",
+        "nodes",
+        "edges",
+        "visit_order",
+        "stats",
+        "warnings",
+        "config",
+        "open_stack",
+        "visited_ids",
+        "complete",
+        "updated_at_utc",
+    )
+    missing = [key for key in required_keys if key not in payload]
+    if missing:
+        joined = ", ".join(missing)
+        raise ValueError(f"checkpoint is missing required keys: {joined}")
+
+    # Validate graph payload shape strictly (year kinds, edge keys, etc.).
+    graph_payload: dict[str, object] = {
+        "schema_version": payload["schema_version"],
+        "generator_version": payload["generator_version"],
+        "start_id": payload["start_id"],
+        "nodes": payload["nodes"],
+        "edges": payload["edges"],
+        "visit_order": payload["visit_order"],
+        "stats": payload["stats"],
+        "warnings": payload["warnings"],
+        "config": payload["config"],
+    }
+    _ = GraphResult.from_dict(graph_payload)
+    return payload
 
 
 def _serialize_open_stack(stack: list[StackItem]) -> list[dict[str, object]]:

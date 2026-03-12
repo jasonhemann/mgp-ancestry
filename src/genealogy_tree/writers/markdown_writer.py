@@ -45,8 +45,6 @@ def _as_object_list(value: object) -> list[object]:
 
 def _format_year_value(value: Mapping[str, object]) -> str:
     kind = _coerce_str(value.get("kind"), "unknown")
-    if kind == "year":
-        return _coerce_str(value.get("value"), "")
     if kind == "years":
         years = [_coerce_str(v) for v in _as_object_list(value.get("values"))]
         return ", ".join(years)
@@ -166,8 +164,7 @@ def render_markdown_lineage(graph: GraphResult) -> str:
             "",
             "## Year Value Notes",
             "- `unknown` means no year was present.",
-            "- `year` is a single parsed year.",
-            "- `years` captures multiple parsed years in source order.",
+            "- `years` captures one or more parsed years in source order.",
             "- `raw` preserves non-numeric year text exactly.",
         ]
     )

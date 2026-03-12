@@ -5,9 +5,10 @@ import csv
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from typing import cast
 from xml.etree import ElementTree as ET
 
-from ..models import GraphResult, extract_numeric_years
+from ..models import GraphResult, YearMany, YearRaw, YearValue, extract_numeric_years
 
 GEXF_NS = "http://www.gexf.net/1.2draft"
 
@@ -22,15 +23,13 @@ class GephiExportResult:
     unresolved_edge_count: int
 
 
-def _year_value_to_numeric(year_value: dict) -> int | None:
-    kind = str(year_value.get("kind", "unknown"))
-    if kind == "year":
-        return int(year_value.get("value", 0))
+def _year_value_to_numeric(year_value: YearValue) -> int | None:
+    kind = year_value["kind"]
     if kind == "years":
-        values = [int(value) for value in year_value.get("values", [])]
+        values = cast(YearMany, year_value)["values"]
         return min(values) if values else None
     if kind == "raw":
-        values = extract_numeric_years(str(year_value.get("text", "")))
+        values = extract_numeric_years(cast(YearRaw, year_value)["text"])
         return min(values) if values else None
     return None
 
@@ -226,7 +225,7 @@ def _write_gexf(output_path: Path, node_rows: list[dict[str, str | int]], edge_r
 
     node_attrs_el = ET.SubElement(graph_el, f"{{{GEXF_NS}}}attributes", {"class": "node"})
     for attr_id, title, attr_type in node_attr_fields:
-        ET.SubElement(
+        _ = ET.SubElement(
             node_attrs_el,
             f"{{{GEXF_NS}}}attribute",
             {"id": attr_id, "title": title, "type": attr_type},
@@ -234,7 +233,7 @@ def _write_gexf(output_path: Path, node_rows: list[dict[str, str | int]], edge_r
 
     edge_attrs_el = ET.SubElement(graph_el, f"{{{GEXF_NS}}}attributes", {"class": "edge"})
     for attr_id, title, attr_type in edge_attr_fields:
-        ET.SubElement(
+        _ = ET.SubElement(
             edge_attrs_el,
             f"{{{GEXF_NS}}}attribute",
             {"id": attr_id, "title": title, "type": attr_type},
@@ -250,7 +249,7 @@ def _write_gexf(output_path: Path, node_rows: list[dict[str, str | int]], edge_r
             value = row.get(attr_id, "")
             if value == "":
                 continue
-            ET.SubElement(
+            _ = ET.SubElement(
                 attvalues,
                 f"{{{GEXF_NS}}}attvalue",
                 {"for": attr_id, "value": str(value)},
@@ -276,7 +275,7 @@ def _write_gexf(output_path: Path, node_rows: list[dict[str, str | int]], edge_r
             value = row.get(attr_id, "")
             if value == "":
                 continue
-            ET.SubElement(
+            _ = ET.SubElement(
                 attvalues,
                 f"{{{GEXF_NS}}}attvalue",
                 {"for": attr_id, "value": str(value)},

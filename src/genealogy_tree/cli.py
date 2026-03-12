@@ -240,30 +240,25 @@ def _run_build(args: BuildArgs) -> int:
     return 0
 
 
-def _run_export_gephi(args: argparse.Namespace) -> int:
+def _run_export_gephi(args: ExportGephiArgs) -> int:
     lineage_path = Path(args.lineage_json)
     if not lineage_path.exists():
         raise SystemExit(f"Lineage JSON does not exist: {lineage_path}")
 
-    payload = json.loads(lineage_path.read_text(encoding="utf-8"))
+    raw_payload = cast(object, json.loads(lineage_path.read_text(encoding="utf-8")))
+    if not isinstance(raw_payload, dict):
+        raise SystemExit(f"Lineage JSON must be an object: {lineage_path}")
+    payload = {str(key): value for key, value in cast(dict[object, object], raw_payload).items()}
     graph = GraphResult.from_dict(payload)
 
     prefix = args.prefix or lineage_path.stem
-    if args.out_dir:
-        out_dir = Path(args.out_dir)
-    else:
-        out_dir = lineage_path.parent / f"{prefix}_gephi"
+    out_dir = Path(args.out_dir) if args.out_dir else lineage_path.parent / f"{prefix}_gephi"
 
     result = write_gephi_exports(graph, out_dir, prefix=prefix)
     print(f"Wrote Gephi nodes CSV: {result.nodes_csv_path}")
     print(f"Wrote Gephi edges CSV: {result.edges_csv_path}")
     print(f"Wrote Gephi GEXF: {result.gexf_path}")
-    print(
-        "Export summary: "
-        f"nodes={result.node_count}, "
-        f"edges={result.edge_count}, "
-        f"unresolved_edges={result.unresolved_edge_count}"
-    )
+    print(f"Export summary: nodes={result.node_count}, edges={result.edge_count}, unresolved_edges={result.unresolved_edge_count}")
     return 0
 
 

@@ -9,7 +9,6 @@ from .models import (
     DegreeRecord,
     InstitutionRecord,
     PersonRecord,
-    StudentRef,
     extract_numeric_years,
     make_year_value,
 )
@@ -182,62 +181,6 @@ def _parse_degree_siblings(degree_div: Tag) -> tuple[str, list[AdvisorRef]]:
     return dissertation, advisors
 
 
-def _parse_students(soup: BeautifulSoup) -> list[StudentRef]:
-    students_header = None
-    for paragraph in soup.find_all("p"):
-        text = paragraph.get_text(" ", strip=True).lower()
-        if "students:" in text:
-            students_header = paragraph
-            break
-
-    if students_header is None:
-        return []
-
-    table = students_header.find_next("table")
-    if table is None:
-        return []
-
-    students: list[StudentRef] = []
-    for row in table.find_all("tr"):
-        if row.find("th") is not None:
-            continue
-
-        cells = row.find_all("td")
-        if not cells:
-            continue
-
-        name_cell = cells[0]
-        name_link = name_cell.find("a", href=True)
-        href_raw = ""
-        student_id: str | None = None
-        if name_link:
-            href_raw = str(name_link.attrs.get("href", "")).strip()
-            id_match = MGP_ID_REGEX.search(href_raw)
-            student_id = id_match.group(1) if id_match else None
-            name = name_link.get_text(" ", strip=True) or name_cell.get_text(" ", strip=True) or "Unknown"
-        else:
-            name = name_cell.get_text(" ", strip=True) or "Unknown"
-
-        school_raw = cells[1].get_text(" ", strip=True) if len(cells) > 1 else ""
-        year_text = cells[2].get_text(" ", strip=True) if len(cells) > 2 else ""
-        descendants_text = cells[3].get_text(" ", strip=True) if len(cells) > 3 else ""
-        year_value = make_year_value(year_text, extract_numeric_years(year_text))
-
-        students.append(
-            StudentRef(
-                name=name,
-                id=student_id,
-                href_raw=href_raw,
-                school_raw=school_raw,
-                year_value=year_value,
-                year_text=year_text,
-                descendants_text=descendants_text,
-            )
-        )
-
-    return students
-
-
 def parse_person_html(
     page_html: str,
     *,
@@ -286,14 +229,12 @@ def parse_person_html(
 
     if not degree_divs:
         parse_warnings.append("No modern degree blocks found on page.")
-    students = _parse_students(soup)
 
     return PersonRecord(
         id=str(person_id or ""),
         name=name,
         url=url,
         degrees=degrees,
-        students=students,
         source_snapshot=source_snapshot,
         parse_warnings=parse_warnings,
     )

@@ -172,13 +172,12 @@ def test_cli_export_gephi(tmp_path: Path):
                                         "country_raw_primary": "DemoLand",
                                     }
                                 ],
-                                "year": {"kind": "year", "value": 2001},
+                                "year": {"kind": "years", "values": [2001]},
                                 "year_text": "2001",
                                 "dissertation": "Demo",
                                 "advisors": [{"name": "Advisor", "id": "2", "href_raw": "id.php?id=2"}],
                             }
                         ],
-                        "students": [],
                         "source_snapshot": "data/snapshots/1.html",
                         "parse_warnings": [],
                     },
@@ -187,7 +186,6 @@ def test_cli_export_gephi(tmp_path: Path):
                         "name": "Advisor",
                         "url": "https://example.test/2",
                         "degrees": [],
-                        "students": [],
                         "source_snapshot": "data/snapshots/2.html",
                         "parse_warnings": [],
                     },

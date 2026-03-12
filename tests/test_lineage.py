@@ -3,28 +3,15 @@ from __future__ import annotations
 from pathlib import Path
 
 from genealogy_tree.lineage import TraversalConfig, build_advisor_graph, load_checkpoint
-from genealogy_tree.models import AdvisorRef, DegreeRecord, InstitutionRecord, PersonRecord, StudentRef, year_single
+from genealogy_tree.models import AdvisorRef, DegreeRecord, InstitutionRecord, PersonRecord, year_many
 
 
-def _person(person_id: str, name: str, advisor_ids: list[str], student_ids: list[str] | None = None) -> PersonRecord:
+def _person(person_id: str, name: str, advisor_ids: list[str]) -> PersonRecord:
     advisors = [AdvisorRef(name=f"A{advisor_id}", id=advisor_id, href_raw=f"id.php?id={advisor_id}") for advisor_id in advisor_ids]
-    students = []
-    for student_id in student_ids or []:
-        students.append(
-            StudentRef(
-                name=f"S{student_id}",
-                id=student_id,
-                href_raw=f"id.php?id={student_id}",
-                school_raw="Test University",
-                year_value=year_single(2010),
-                year_text="2010",
-                descendants_text="",
-            )
-        )
     degree = DegreeRecord(
         degree_type="Ph.D.",
         institutions=[InstitutionRecord(name_raw="Test University", countries_raw=["Testland"])],
-        year_value=year_single(2000),
+        year_value=year_many([2000]),
         year_text="2000",
         dissertation="Test",
         advisors=advisors,
@@ -34,7 +21,6 @@ def _person(person_id: str, name: str, advisor_ids: list[str], student_ids: list
         name=name,
         url=f"https://example.test/{person_id}",
         degrees=[degree],
-        students=students,
     )
 
 
