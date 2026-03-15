@@ -8,7 +8,7 @@ Project files are intentionally local/untracked.
 Generate Gephi export files first:
 
 ```sh
-genealogy-tree export-gephi out/lineage_<id>.json
+mgp-ancestry export-gephi out/lineage_<id>.json
 ```
 
 Then open Gephi with the generated GEXF:

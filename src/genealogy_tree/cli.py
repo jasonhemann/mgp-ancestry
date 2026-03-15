@@ -105,7 +105,7 @@ class ExportGephiArgs:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="genealogy-tree")
+    parser = argparse.ArgumentParser(prog="mgp-ancestry")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     build_parser = subparsers.add_parser(

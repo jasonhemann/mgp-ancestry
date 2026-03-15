@@ -1,4 +1,4 @@
-# Developing `genealogy-tree`
+# Developing `mgp-ancestry`
 
 ## Environment
 

@@ -1,5 +1,5 @@
 [project]
-name = "genealogy-tree"
+name = "mgp-ancestry"
 version = "0.1.0"
 description = "Builds a math genealogy tree for a given user"
 authors = [
@@ -11,7 +11,7 @@ readme = "README.md"
 license = {text = "MIT"}
 
 [project.scripts]
-genealogy-tree = "genealogy_tree.cli:main"
+mgp-ancestry = "genealogy_tree.cli:main"
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
@@ -78,6 +78,7 @@ convention = "pep257"
 [tool.basedpyright]
 include = ["src"]
 typeCheckingMode = "recommended"
+pythonVersion = "3.13"
 venvPath = "."
 venv = ".venv"
 

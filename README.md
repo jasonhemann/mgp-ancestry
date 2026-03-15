@@ -1,6 +1,6 @@
-# genealogy-tree
+# mgp-ancestry
 
-Build advisor-only ancestry DAGs from Mathematics Genealogy Project pages.
+Math Genealogy Project ancestry tree generator.
 
 This repository is a reusable CLI tool: start from any MGP ID and traverse upward through all listed advisors.
 
@@ -9,13 +9,13 @@ This repository is a reusable CLI tool: start from any MGP ID and traverse upwar
 ```sh
 uv sync --group dev
 source .venv/bin/activate
-genealogy-tree build <start_id>
+mgp-ancestry build <start_id>
 ```
 
 Key options:
 
 ```sh
-genealogy-tree build <start_id> \
+mgp-ancestry build <start_id> \
   --max-depth 20 \
   --max-nodes 500 \
   --stop-id 2185 \
@@ -27,7 +27,7 @@ Traversal direction is upward-only: person to all listed advisors.
 See all options:
 
 ```sh
-genealogy-tree build --help
+mgp-ancestry build --help
 ```
 
 ## Example Output
@@ -44,7 +44,7 @@ Sample full-depth Graphviz output for start ID `281144`:
 Export an existing lineage JSON into Gephi-friendly formats:
 
 ```sh
-genealogy-tree export-gephi out/lineage_<start_id>.json
+mgp-ancestry export-gephi out/lineage_<start_id>.json
 ```
 
 ```sh
@@ -54,7 +54,7 @@ make viz-graphviz INPUT=out/lineage_<start_id>.json ID=<start_id> FORMAT=png
 See all export options:
 
 ```sh
-genealogy-tree export-gephi --help
+mgp-ancestry export-gephi --help
 ```
 
 ## Attribution and Non-Affiliation

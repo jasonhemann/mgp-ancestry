@@ -198,7 +198,7 @@ def _write_gexf(
         gexf, f"{{{GEXF_NS}}}meta", {"lastmodifieddate": date.today().isoformat()}
     )
     creator = ET.SubElement(meta, f"{{{GEXF_NS}}}creator")
-    creator.text = "genealogy-tree"
+    creator.text = "mgp-ancestry"
     description = ET.SubElement(meta, f"{{{GEXF_NS}}}description")
     description.text = "Advisor-only lineage export"
 
