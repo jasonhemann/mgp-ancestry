@@ -18,6 +18,9 @@ DEFAULT_MAX_NODES = 500
 DEFAULT_MAX_NODES_HARD = 10000
 DEFAULT_SNAPSHOT_DIR = "data/snapshots"
 DEFAULT_OUT_DIR = "out"
+TOP_LEVEL_EPILOG = (
+    "Use `mgp-ancestry <subcommand> --help` for subcommand-specific options."
+)
 
 
 def _coerce_str(value: object, default: str = "") -> str:
@@ -105,7 +108,10 @@ class ExportGephiArgs:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="mgp-ancestry")
+    parser = argparse.ArgumentParser(
+        prog="mgp-ancestry",
+        epilog=TOP_LEVEL_EPILOG,
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     build_parser = subparsers.add_parser(

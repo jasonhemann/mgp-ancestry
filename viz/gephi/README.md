@@ -8,7 +8,7 @@ Project files are intentionally local/untracked.
 Generate Gephi export files first:
 
 ```sh
-mgp-ancestry export-gephi out/lineage_<id>.json
+uv run mgp-ancestry export-gephi out/lineage_<id>.json
 ```
 
 Then open Gephi with the generated GEXF:
@@ -26,10 +26,3 @@ make viz-gephi-open INPUT=out/lineage_<id>_gephi/lineage_<id>.gexf
    - Keep node labels off by default and inspect on hover.
 4. For duplicate advisor links on multi-degree people, rely on merge strategy to avoid parallel-edge clutter.
 
-## Global Gephi state note
-
-Gephi stores some global settings outside the repo:
-
-- `~/Library/Application Support/gephi/0.10`
-
-Project/workspace settings in `.gephi` are local unless you choose to track one explicitly.

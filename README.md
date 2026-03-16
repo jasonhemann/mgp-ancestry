@@ -12,10 +12,16 @@ source .venv/bin/activate
 mgp-ancestry build <start_id>
 ```
 
+Or, from outside the virtual environment,
+
+```sh
+uv run mgp-ancestry build 281144
+```
+
 Key options:
 
 ```sh
-mgp-ancestry build <start_id> \
+uv run mgp-ancestry build <start_id> \
   --max-depth 20 \
   --max-nodes 500 \
   --stop-id 2185 \
@@ -27,7 +33,7 @@ Traversal direction is upward-only: person to all listed advisors.
 See all options:
 
 ```sh
-mgp-ancestry build --help
+uv run mgp-ancestry build --help
 ```
 
 ## Example Output
@@ -44,17 +50,17 @@ Sample full-depth Graphviz output for start ID `281144`:
 Export an existing lineage JSON into Gephi-friendly formats:
 
 ```sh
-mgp-ancestry export-gephi out/lineage_<start_id>.json
+uv run mgp-ancestry export-gephi out/lineage_<start_id>.json
 ```
 
 ```sh
-make viz-graphviz INPUT=out/lineage_<start_id>.json ID=<start_id> FORMAT=png
+uv run make viz-graphviz INPUT=out/lineage_281144.json ID=281144 FORMAT=png
 ```
 
 See all export options:
 
 ```sh
-mgp-ancestry export-gephi --help
+uv run mgp-ancestry export-gephi --help
 ```
 
 ## Attribution and Non-Affiliation
