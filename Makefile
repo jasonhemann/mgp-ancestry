@@ -32,7 +32,7 @@ repo-hygiene:
 	bash scripts/check_tracked_runtime_artifacts.sh
 
 viz-gephi-open:
-	$(MAKE) -C viz gephi-open INPUT="$(INPUT)"
+	$(MAKE) -C viz gephi-open INPUT="$(abspath $(INPUT))"
 
 viz-graphviz:
 	@if [ -z "$(INPUT)" ] || [ -z "$(ID)" ]; then \

@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 import re
 from typing import Literal, TypedDict, cast
 
-PARSER_VERSION = "1.0.0"
+PARSER_VERSION = "1.1.0"
 SCHEMA_VERSION = "1.0.0"
 GENERATOR_VERSION = PARSER_VERSION
 

@@ -15,7 +15,10 @@ from .models import (
 
 MGP_TITLE_SUFFIX = " - The Mathematics Genealogy Project"
 MGP_ID_REGEX = re.compile(r"id\.php\?id=(\d+)")
-ADVISOR_LINE_REGEX = re.compile(r"^\s*advisors?(?:\s+\d+)?\s*:", re.I)
+ADVISOR_LINE_REGEX = re.compile(
+    r"^\s*(?:advisors?(?:\s+\d+)?|copromotor|promotor)\s*:",
+    re.I,
+)
 
 
 def extract_name(soup: BeautifulSoup) -> str:

@@ -75,6 +75,53 @@ def test_parse_advisor_line_ignores_footer_advisor_id_links():
     ]
 
 
+def test_parse_promotor_labels_as_advisors():
+    html = """
+    <html>
+      <body>
+        <h2 style="text-align: center;">Promotor Label Person</h2>
+        <div style="line-height: 30px; text-align: center; margin-bottom: 1ex">
+          <span>Ph.D. <span style="color:#006633">Radboud Universiteit Nijmegen</span> 2015</span>
+        </div>
+        <div style="text-align: center"><span id="thesisTitle">Thesis</span></div>
+        <p style="text-align: center; line-height: 2.75ex">
+          Copromotor: <a href="id.php?id=101172">Freek Wiedijk</a><br />
+          Promotor: <a href="id.php?id=92986">Jan Herman Geuvers</a><br />
+        </p>
+      </body>
+    </html>
+    """
+    person = parse_person_html(html, person_id="x")
+    advisors = person.to_dict()["degrees"][0]["advisors"]
+    assert advisors == [
+        {"name": "Freek Wiedijk", "id": "101172", "href_raw": "id.php?id=101172"},
+        {
+            "name": "Jan Herman Geuvers",
+            "id": "92986",
+            "href_raw": "id.php?id=92986",
+        },
+    ]
+
+
+def test_unobserved_promotor_variants_are_not_advisors():
+    html = """
+    <html>
+      <body>
+        <h2 style="text-align: center;">Unobserved Label Person</h2>
+        <div style="line-height: 30px; text-align: center; margin-bottom: 1ex">
+          <span>Ph.D. <span style="color:#006633">Radboud Universiteit Nijmegen</span> 2015</span>
+        </div>
+        <p style="text-align: center; line-height: 2.75ex">
+          Co-promotor: <a href="id.php?id=101172">Freek Wiedijk</a><br />
+          Promoter: <a href="id.php?id=92986">Jan Herman Geuvers</a><br />
+        </p>
+      </body>
+    </html>
+    """
+    person = parse_person_html(html, person_id="x")
+    assert person.to_dict()["degrees"][0]["advisors"] == []
+
+
 def test_parse_129079_multi_degree_multi_advisor_unknown_advisor(load_fixture_html):
     person = parse_person_html(load_fixture_html("129079"), person_id="129079")
     payload = person.to_dict()
