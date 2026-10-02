@@ -5,7 +5,7 @@ description = "Builds a math genealogy tree for a given user"
 authors = [
     {name = "Jason Hemann", email = "jason.hemann@gmail.com"},
 ]
-dependencies = ["beautifulsoup4>=4.12.3", "requests>=2.32.3"]
+dependencies = ["beautifulsoup4>=4.12.3", "requests>=2.33.0"]
 requires-python = ">=3.13"
 readme = "README.md"
 license = {text = "MIT"}
@@ -87,7 +87,7 @@ venv = ".venv"
 dev = [
     "basedpyright>=1.24.0",
     "pre-commit>=4.2.0",
-    "pytest>=8.3.5",
+    "pytest>=9.0.3",
     "pytest-cov>=6.0.0",
     "pytest-mock>=3.14.0",
     "ruff>=0.11.0",
